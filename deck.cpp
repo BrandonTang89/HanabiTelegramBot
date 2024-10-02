@@ -2,9 +2,8 @@
 #include <cassert>
 #include <boost/log/trivial.hpp>
 
-
 Deck::Deck(){
-    for (int colNum = 0; colNum < Card::num_colours; colNum++) {
+    for (int colNum = 0; colNum < Card::numColours; colNum++) {
         Card::Colours colour = static_cast<Card::Colours>(colNum);
 
         // 3 of number 1

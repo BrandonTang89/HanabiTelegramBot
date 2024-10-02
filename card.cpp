@@ -5,18 +5,18 @@
 
 using std::string;
 
-string getColourString(Card::Colours colour) {
+string Card::getColourString(Card::Colours colour) {
     switch (colour) {
         case Card::RED:
-            return "Red";
+            return "Red   ";
         case Card::BLUE:
-            return "Blue";
+            return "Blue  ";
         case Card::GREEN:
-            return "Green";
+            return "Green ";
         case Card::YELLOW:
             return "Yellow";
         case Card::WHITE:
-            return "White";
+            return "White ";
         default:
             assert(false); 
             return "???";

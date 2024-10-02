@@ -57,7 +57,7 @@ void join_session(Player joiner) {
     lock.unlock();
 
     while (true) {
-        send_(joiner.socket, "Enter the ID of the session you want to join: ");
+        send_(joiner.socket, "Enter the ID of the session you want to join");
         string sessionIdS = read_(joiner.socket);
         int sessionId = parseInt(sessionIdS);
 
@@ -86,7 +86,7 @@ void handle_client(tcp::socket socket) {
     send_(socket, "Welcome to Hanbi!\n");
 
     // Get name and build player object
-    send_(socket, "Please enter your name:");
+    send_(socket, "Please enter your name");
     string name{read_(socket)};
 
     Player player{name, std::move(socket)};

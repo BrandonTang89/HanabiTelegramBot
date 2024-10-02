@@ -6,7 +6,8 @@
 using std::string;
 class Card {
 public:
-    enum Colours { RED, BLUE, GREEN, YELLOW, WHITE, num_colours };
+    enum Colours { RED, BLUE, GREEN, YELLOW, WHITE, numColours };
+    static string getColourString(Colours colour);
     
     int number{}; // 1-5
     Colours colour{};
