@@ -6,7 +6,7 @@
 using std::string;
 class Card {
 public:
-    enum Colours { RED, BLUE, GREEN, YELLOW, WHITE, numColours };
+    enum Colours { RED, BLUE, GREEN, YELLOW, WHITE, numColours, EMPTY }; // empty card for when deck runs out of cards
     static string getColourString(Colours colour);
     
     int number{}; // 1-5

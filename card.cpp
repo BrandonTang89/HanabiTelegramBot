@@ -17,6 +17,8 @@ string Card::getColourString(Card::Colours colour) {
             return "Yellow";
         case Card::WHITE:
             return "White ";
+        case Card::EMPTY:
+            return "      ";
         default:
             assert(false); 
             return "???";

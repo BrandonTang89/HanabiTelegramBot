@@ -30,9 +30,10 @@ void Deck::shuffle() {
 }
 
 Card Deck::draw() {
-    assert(nextCardIndex < totalCards);
-    Card c = cards[nextCardIndex++];
-    // BOOST_LOG_TRIVIAL(trace) << "Drew card: " << c;
+    if (nextCardIndex < totalCards) return cards[nextCardIndex++];
+    Card c = Card(0, Card::Colours::EMPTY);
+    c.colourRevealed = true;
+    c.numberRevealed = true;
     return c;
 }
 

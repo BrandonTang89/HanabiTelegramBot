@@ -58,14 +58,7 @@ void join_session(Player joiner) {
 
     while (true) {
         send_(joiner.socket, "Enter the ID of the session you want to join");
-        string sessionIdS = read_(joiner.socket);
-        int sessionId = parseInt(sessionIdS);
-
-        if (sessionId < 0) {
-            BOOST_LOG_TRIVIAL(trace) << joiner << " sent ill-formatted session id";
-            send_(joiner.socket, "Session IDs are positive integers.\n");
-            continue;
-        }
+        int sessionId = requestInt(0, INT_MAX, "Invalid Session ID!\n", joiner);
 
         BOOST_LOG_TRIVIAL(debug) << joiner << " trying to join session " << sessionId;
         lock.lock();
