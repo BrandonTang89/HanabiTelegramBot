@@ -27,7 +27,7 @@ inline int requestInt(int lower, int higher, const string& invalidMessage, Playe
     return action.value();
 }
 
-void broadcast(std::vector<Player>& players, const std::string& message) {
+inline void broadcast(std::vector<Player>& players, const std::string& message) {
     for (Player& player : players) {
         send_(player.socket, message);
     }

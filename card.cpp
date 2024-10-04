@@ -35,9 +35,9 @@ string Card::fullRepr() const{
     } else if (colourRevealed) {
         return "Card([" + colourStr + "], ?" + numberStr + "?)";
     } else if (numberRevealed) {
-        return "Card(?" + numberStr + "?, [" + colourStr + "])";
+        return "Card(?" + colourStr + "?, [" + numberStr + "])";
     } else {
-        return "Card(?" + numberStr + ", " + colourStr + "?)";
+        return "Card(?" + colourStr + ", " + numberStr + "?)";
     }
 }
 
@@ -50,7 +50,7 @@ string Card::hiddenRepr() const {
     } else if (colourRevealed) {
         return "Card([" + colourStr + "], \?\?)";
     } else if (numberRevealed) {
-        return "Card(\?\?, [" + colourStr + "])";
+        return "Card(\?\?, [" + numberStr + "])";
     } else {
         return "Card(\?\?, \?\?)";
     }

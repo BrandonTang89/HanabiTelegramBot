@@ -89,7 +89,7 @@ void Game::start() {
     if (totalPts == 25) {
         broadcast(players, "Congratulations! You have successfully completed the fireworks!\n");
     } else {
-        broadcast(players, "Game Over! You have run out of black fuse tokens!\n");
+        broadcast(players, "You have run out of black fuse tokens!\n");
         broadcast(players, "Final Score: " + std::to_string(totalPts) + "\n");
     }
 }
@@ -181,21 +181,90 @@ bool Game::discardCard(int playerIndex) {
 }
 
 bool Game::giveHint(int playerIndex) {
-    assert(numBlueTokens > 0);
-    numBlueTokens--;
-
     Player& player = players[playerIndex];
     send_(player.socket, "Select a player to give hint to, or -1 to go back: \n");
-    int hinteeIndex = -1;
-    while (hinteeIndex == -1) {
-        hinteeIndex = requestInt(-1, numPlayers - 1, "Invalid player selected!\n", player);
-        if (hinteeIndex == playerIndex) {
-            hinteeIndex = -1;
+    std::optional<int> hinteeIndexO = std::nullopt;
+    while (!hinteeIndexO.has_value()) {
+        hinteeIndexO = requestInt(-1, numPlayers - 1, "Invalid player selected!\n", player);
+        if (hinteeIndexO == playerIndex) {
+            hinteeIndexO = std::nullopt;
             send_(player.socket, "You cannot give a hint to yourself!\n");
         }
     }
+    if (hinteeIndexO.value() == -1) return false;  // change action
 
     // TODO: Select card and actually give the hint
+    send_(player.socket, "Select which information to give, or -1 to pick another action:\n");
+    send_(player.socket, "0. Colour\n");
+    send_(player.socket, "1. Number\n");
+    int hintType = requestInt(-1, 1, "Invalid hint type selected!\n", player);
+
+    if (hintType == -1) return false;  // change action
+
+    if (hintType == 0) {
+        send_(player.socket, "Select a colour to hint or -1 to pick another action: \n");
+        for (int i = 0; i < Card::Colours::numColours; i++) {
+            send_(player.socket, std::to_string(i) + ". " + Card::getColourString(static_cast<Card::Colours>(i)) + "\n");
+        }
+
+        while (true) {
+            int colourIndex = requestInt(-1, Card::Colours::numColours - 1, "Invalid colour selected!\n", player);
+            if (colourIndex == -1) return false;
+            Card::Colours colour = static_cast<Card::Colours>(colourIndex);
+
+            std::vector<std::reference_wrapper<Card>> targettedCards;
+            for (Card& card : hands[hinteeIndexO.value()]) {
+                if (card.colour == colour) {
+                    targettedCards.push_back(card);
+                }
+            }
+
+            if (targettedCards.empty()) {
+                send_(player.socket, "Player " + std::to_string(hinteeIndexO.value()) + " has no cards of colour " + Card::getColourString(colour) + "\n");
+            } else {
+                broadcast(players, "Player " + std::to_string(playerIndex) + " gave a hint to Player " + std::to_string(hinteeIndexO.value()) + " about the colour " + Card::getColourString(colour) + "\n");
+                numBlueTokens--;
+                for (Card& card : targettedCards) {
+                    card.colourRevealed = true;
+                }
+                break;
+            }
+        }
+        return true;
+    } else {
+        send_(player.socket, "Select a number to hint or -1 to pick another action: \n");
+        for (int i = 1; i <= 5; i++) {
+            send_(player.socket, std::to_string(i) + "\n");
+        }
+
+        while (true) {
+            int number = requestInt(-1, 5, "Invalid number selected!\n", player);
+            if (number == 0) {
+                send_(player.socket, "Number cannot be 0!\n");
+                continue;
+            }
+            if (number == -1) return false;
+
+            std::vector<std::reference_wrapper<Card>> targettedCards;
+            for (Card& card : hands[hinteeIndexO.value()]) {
+                if (card.number == number) {
+                    targettedCards.push_back(card);
+                }
+            }
+
+            if (targettedCards.empty()) {
+                send_(player.socket, "Player " + std::to_string(hinteeIndexO.value()) + " has no cards of number " + std::to_string(number) + "\n");
+            } else {
+                broadcast(players, "Player " + std::to_string(playerIndex) + " gave a hint to Player " + std::to_string(hinteeIndexO.value()) + " about the number " + std::to_string(number) + "\n");
+                numBlueTokens--;
+                for (Card& card : targettedCards) {
+                    card.numberRevealed = true;
+                }
+                break;
+            }
+        }
+        return true;
+    }
 
     return true;
 }
