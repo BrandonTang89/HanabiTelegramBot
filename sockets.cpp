@@ -17,7 +17,7 @@ string read_(tcp::socket& socket) {
         data.pop_back();
     }
 
-    BOOST_LOG_TRIVIAL(trace) << "Received: " << data;
+    // BOOST_LOG_TRIVIAL(trace) << "Received: " << data;
     return data;
 }
 

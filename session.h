@@ -26,7 +26,9 @@ class Session {
     bool join(Player& player);  // returns true if and only if the join succeed
     Player& getLeader();
     int getNumPlayers() const;
+    void broadcast(const std::string& message);
     int getId() const;
+    void invalidate();
 
     // Representation for Debugging
     friend std::ostream& operator<<(std::ostream& os, const Session& sess);

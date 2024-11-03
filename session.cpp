@@ -60,6 +60,13 @@ bool Session::join(Player& player) {
     return true;
 }
 
+void Session::broadcast(const string& message) {
+    std::lock_guard<std::mutex> guard(session_mutex);
+    for (auto& player : players) {
+        send_(player.socket, message);
+    }
+}
+
 // Overloaded << Operator for Session Class
 std::ostream& operator<<(std::ostream& os, const Session& sess) {
     assert(static_cast<int>(sess.players.size()) > 0);
@@ -78,4 +85,11 @@ int Session::getNumPlayers() const {
 
 int Session::getId() const {
     return sessionId;
+}
+
+void Session::invalidate() {
+    std::unique_lock<std::mutex> lock(session_mutex);
+    BOOST_LOG_TRIVIAL(info) << "Session " << sessionId << " is now closed...";
+    lock.unlock();
+    broadcast("--> This session is now closed..\n");
 }

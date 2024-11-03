@@ -3,11 +3,11 @@
 #include <mutex>
 #include <thread>
 
+#include "game.h"
 #include "helper.h"
 #include "player.h"
 #include "session.h"
 #include "sockets.h"
-#include "game.h"
 
 using namespace boost::asio;
 using ip::tcp;
@@ -32,7 +32,19 @@ void create_session(Player leader) {
     // Wait for all players to join
     while (true) {
         send_(player_socket, "Type \"start\" and hit [ENTER] when all your session members have joined!\n");
-        string start = read_(player_socket);
+        std::optional<string> startOpt = _readCatch(player_socket);
+        if (!startOpt.has_value()) {
+            BOOST_LOG_TRIVIAL(info) << "Leader of session " << session_id << " disconnected!";
+
+            session.invalidate();  // Invalidate the session
+
+            lock.lock();  // Remove the session from the hashtable
+            sessions.erase(session_id);
+            lock.unlock();
+            return;
+        }
+        // string start = read_(player_socket);
+        string start = startOpt.value();
         if (start == "start") {
             if (session.getNumPlayers() == 1) {
                 send_(player_socket, "You are the only player in the session. Please wait for others to join.\n");
@@ -42,10 +54,16 @@ void create_session(Player leader) {
         }
     }
 
-    // Start the game
+    // Construct the game object
     send_(player_socket, "Starting the game...\n");
+    std::unique_ptr<Game> gptr{new Game(std::move(session))};  // allocate on heap to avoid stack overflow
 
-    std::unique_ptr<Game> gptr {new Game(std::move(session))}; // allocate on heap to avoid stack overflow
+    // Remove the session from the hashtable
+    lock.lock();
+    sessions.erase(session_id);
+    lock.unlock();
+
+    // Start the game
     gptr->start();
     return;
 }
@@ -57,7 +75,14 @@ void join_session(Player joiner) {
 
     while (true) {
         send_(joiner.socket, "Enter the ID of the session you want to join");
-        int sessionId = requestInt(0, INT_MAX, "Invalid Session ID!\n", joiner);
+        int sessionId;
+        try{
+            sessionId = requestInt(0, INT_MAX, "Invalid Session ID!\n", joiner);
+        }
+        catch (std::exception& e){
+            BOOST_LOG_TRIVIAL(info) << joiner << " disconnected!";
+            return;
+        }
 
         BOOST_LOG_TRIVIAL(debug) << joiner << " trying to join session " << sessionId;
         lock.lock();
@@ -87,7 +112,6 @@ void handle_client(tcp::socket socket) {
     string name{name_opt.value()};
     // string name = read_(socket);
 
-
     BOOST_LOG_TRIVIAL(info) << "New Client: " << name;
     Player player{name, std::move(socket)};
 
@@ -103,7 +127,7 @@ void handle_client(tcp::socket socket) {
             return;
         }
         string choice{choice_opt.value()};
-        
+
         if (choice == "1") {
             create_session(std::move(player));
             break;
