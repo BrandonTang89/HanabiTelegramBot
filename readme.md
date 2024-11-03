@@ -4,5 +4,3 @@ This command line game reproduces the [Hanabi Game](https://boardgamegeek.com/bo
 
 
 ## To Do
-- Test the game loop for client disconnects
-- Ensure that other parts of the server are protected from crashing if a client disconnects.
