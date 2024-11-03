@@ -3,3 +3,6 @@
 
 # Ignore the compiled binary
 server
+
+# Ignore the build directory
+out/

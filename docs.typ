@@ -13,6 +13,7 @@
   #text(weight: 550, 1.1em, author)
 ]
 
+== Hanabi Command Line Game
 Low Priority Items:
 - Input validation on the name of players
 - If anyone leaves on read, the server crashes. write a seperate function that reads from socket and returns a `std::optional<std::string>` so we don't have this kind of behavior

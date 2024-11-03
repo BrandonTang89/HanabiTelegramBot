@@ -8,7 +8,6 @@
 #include "deck.h"
 #include "card.h"
 
-
 // Your code goes here
 class Game {
    private:

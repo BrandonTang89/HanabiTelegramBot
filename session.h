@@ -5,7 +5,7 @@
 #include <optional>
 #include <vector>
 
-#include "player.h"
+class Player; // Forward Declaration
 
 class Session {
    public:

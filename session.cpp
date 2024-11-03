@@ -1,8 +1,8 @@
-#include "session.h"
-
 #include <boost/log/trivial.hpp>
 #include <cassert>
 
+#include "session.h"
+#include "player.h"
 #include "sockets.h"
 
 // Constructor

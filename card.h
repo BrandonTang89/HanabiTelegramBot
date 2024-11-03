@@ -1,6 +1,5 @@
 #ifndef CARD_H
 #define CARD_H
-#include <iostream>
 #include <string>
 
 using std::string;
@@ -18,7 +17,6 @@ public:
     
     string fullRepr() const;
     string hiddenRepr() const;
-
 
     friend std::ostream& operator<<(std::ostream& os, const Card& card);
 

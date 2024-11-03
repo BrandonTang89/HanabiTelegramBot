@@ -1,8 +1,12 @@
 #include "deck.h" 
+#include "card.h"
 #include <cassert>
 #include <boost/log/trivial.hpp>
 
 Deck::Deck(){
+    std::random_device rd;
+    mt.seed(rd());
+
     for (int colNum = 0; colNum < Card::numColours; colNum++) {
         Card::Colours colour = static_cast<Card::Colours>(colNum);
 
@@ -26,7 +30,7 @@ Deck::Deck(){
 }
 
 void Deck::shuffle() {
-    std::random_shuffle(cards.begin(), cards.end());
+    std::shuffle(cards.begin(), cards.end(), mt);
 }
 
 Card Deck::draw() {

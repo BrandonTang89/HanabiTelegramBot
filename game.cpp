@@ -1,10 +1,15 @@
+
 #include "game.h"
 
 #include <boost/log/trivial.hpp>
 #include <iostream>
 
 #include "card.h"
+#include "deck.h"
 #include "helper.h"
+#include "player.h"
+#include "session.h"
+#include "sockets.h"
 
 Game::Game(Session&& session)
     : players{std::move(session.players)},
@@ -72,17 +77,24 @@ void Game::start() {
 
     BOOST_LOG_TRIVIAL(debug) << *this << " has been set-up!";
 
-    // display();
+    // main game loop
     int curPlayer = 0;
     int totalPts = 0;
-    while (true) {
-        // curPlayer's turn
-        turn(curPlayer);
-        curPlayer = (curPlayer + 1) % numPlayers;
+    try {
+        while (true) {
+            // curPlayer's turn
+            turn(curPlayer);
+            curPlayer = (curPlayer + 1) % numPlayers;
 
-        totalPts = 0;
-        for (int i = 0; i < Card::Colours::numColours; i++) totalPts += table[i];
-        if (totalPts == 25 || numBlackFuseTokens == 0) break;
+            totalPts = 0;
+            for (int i = 0; i < Card::Colours::numColours; i++) totalPts += table[i];
+            if (totalPts == 25 || numBlackFuseTokens == 0) break;
+        }
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << "Error in game loop: " << e.what();
+        broadcast(players, "An error occurred in the game loop! likely that someone left :(\n");
+        broadcast(players, "Ending Game...\n");
+        return;
     }
 
     broadcast(players, "Game Over!\n");
@@ -113,21 +125,21 @@ void Game::turn(int playerIndex) {
 bool Game::selectAction(int playerIndex) {
     Player& player = players[playerIndex];
     send_(player.socket, "Select an action: \n");
-    send_(player.socket, "1. Play a card\n");
-    send_(player.socket, "2. Discard a card\n");
+    send_(player.socket, "0. Play a card\n");
+    send_(player.socket, "1. Discard a card\n");
     if (numBlueTokens > 0) {
-        send_(player.socket, "3. Give a hint\n");
+        send_(player.socket, "2. Give a hint\n");
     }
 
-    int action = requestInt(1, (numBlueTokens > 0 ? 3 : 2), "Invalid action. Please try again.\n", player);
+    int action = requestInt(0, (numBlueTokens > 0 ? 2 : 1), "Invalid action. Please try again.\n", player);
     switch (action) {
-        case 1:
+        case 0:
             return Game::playCard(playerIndex);
             break;
-        case 2:
+        case 1:
             return Game::discardCard(playerIndex);
             break;
-        case 3:
+        case 2:
             return Game::giveHint(playerIndex);
             break;
         default:
@@ -193,7 +205,6 @@ bool Game::giveHint(int playerIndex) {
     }
     if (hinteeIndexO.value() == -1) return false;  // change action
 
-    // TODO: Select card and actually give the hint
     send_(player.socket, "Select which information to give, or -1 to pick another action:\n");
     send_(player.socket, "0. Colour\n");
     send_(player.socket, "1. Number\n");
@@ -201,6 +212,7 @@ bool Game::giveHint(int playerIndex) {
 
     if (hintType == -1) return false;  // change action
 
+    // Give Colour Hint
     if (hintType == 0) {
         send_(player.socket, "Select a colour to hint or -1 to pick another action: \n");
         for (int i = 0; i < Card::Colours::numColours; i++) {
@@ -220,7 +232,7 @@ bool Game::giveHint(int playerIndex) {
             }
 
             if (targettedCards.empty()) {
-                send_(player.socket, "Player " + std::to_string(hinteeIndexO.value()) + " has no cards of colour " + Card::getColourString(colour) + "\n");
+                send_(player.socket, "Player " + std::to_string(hinteeIndexO.value()) + " has no cards of colour " + Card::getColourString(colour) + ", give another hint\n");
             } else {
                 broadcast(players, "Player " + std::to_string(playerIndex) + " gave a hint to Player " + std::to_string(hinteeIndexO.value()) + " about the colour " + Card::getColourString(colour) + "\n");
                 numBlueTokens--;
@@ -231,7 +243,9 @@ bool Game::giveHint(int playerIndex) {
             }
         }
         return true;
-    } else {
+    }
+    // Give number hint
+    else {
         send_(player.socket, "Select a number to hint or -1 to pick another action: \n");
         for (int i = 1; i <= 5; i++) {
             send_(player.socket, std::to_string(i) + "\n");
@@ -253,7 +267,7 @@ bool Game::giveHint(int playerIndex) {
             }
 
             if (targettedCards.empty()) {
-                send_(player.socket, "Player " + std::to_string(hinteeIndexO.value()) + " has no cards of number " + std::to_string(number) + "\n");
+                send_(player.socket, "Player " + std::to_string(hinteeIndexO.value()) + " has no cards of number " + std::to_string(number) + ", give another hint\n");
             } else {
                 broadcast(players, "Player " + std::to_string(playerIndex) + " gave a hint to Player " + std::to_string(hinteeIndexO.value()) + " about the number " + std::to_string(number) + "\n");
                 numBlueTokens--;

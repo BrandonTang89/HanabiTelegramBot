@@ -1,4 +1,3 @@
-#include <boost/asio.hpp>
 #include <boost/log/trivial.hpp>
 #include <iostream>
 #include <mutex>
@@ -80,8 +79,16 @@ void handle_client(tcp::socket socket) {
 
     // Get name and build player object
     send_(socket, "Please enter your name");
-    string name{read_(socket)};
+    std::optional<string> name_opt{_readCatch(socket)};
+    if (!name_opt.has_value()) {
+        BOOST_LOG_TRIVIAL(info) << "Client disconnected!";
+        return;
+    }
+    string name{name_opt.value()};
+    // string name = read_(socket);
 
+
+    BOOST_LOG_TRIVIAL(info) << "New Client: " << name;
     Player player{name, std::move(socket)};
 
     // Show Menu of Options
@@ -90,10 +97,15 @@ void handle_client(tcp::socket socket) {
 
     // Handle Client Input
     while (true) {
-        string choice = read_(player.socket);
+        std::optional<string> choice_opt{_readCatch(player.socket)};
+        if (!choice_opt.has_value()) {
+            BOOST_LOG_TRIVIAL(info) << "Client disconnected!";
+            return;
+        }
+        string choice{choice_opt.value()};
+        
         if (choice == "1") {
             create_session(std::move(player));
-
             break;
         } else if (choice == "2") {
             join_session(std::move(player));
