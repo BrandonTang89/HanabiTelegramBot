@@ -1,9 +1,7 @@
 #ifndef SOCKETSH
 #define SOCKETSH
 
-#include <boost/asio.hpp>
-#include <string>
-#include <optional>
+#include "pch.h"
 
 using boost::asio::ip::tcp;
 using std::string;
