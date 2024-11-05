@@ -185,6 +185,8 @@ bool Game::discardCard(int playerIndex) {
 
     Card card = hands[playerIndex][cardIndex];
 
+    broadcast(players, "Player " + std::to_string(playerIndex) + " discarded " + card.fullRepr() + "\n");
+
     numBlueTokens++;
     discardPile.push_back(card);
     hands[playerIndex][cardIndex] = deck.draw();

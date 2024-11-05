@@ -42,7 +42,6 @@ void create_session(Player leader) {
             lock.unlock();
             return;
         }
-        // string start = read_(player_socket);
         string start = startOpt.value();
         if (start == "start") {
             if (session.getNumPlayers() == 1) {
@@ -130,7 +129,7 @@ void handle_client(tcp::socket socket) {
     Player player{name, std::move(socket)};
 
     // Show Menu of Options
-    static const string menu = "1. Create New Session\n2. Join Existing Session\n3. Quit\n";
+    static const string menu = "0. Create New Session\n1. Join Existing Session\n2. Quit\n";
     send_(player.socket, menu);
 
     // Handle Client Input
@@ -142,14 +141,15 @@ void handle_client(tcp::socket socket) {
         }
         string choice{choice_opt.value()};
 
-        if (choice == "1") {
+        if (choice == "0") {
             create_session(std::move(player));
             break;
-        } else if (choice == "2") {
+        } else if (choice == "1") {
             join_session(std::move(player));
             break;
-        } else if (choice == "3") {
+        } else if (choice == "2") {
             send_(player.socket, "Goodbye!\n");
+            BOOST_LOG_TRIVIAL(info) << "Client " + name + " disconnected!";
             break;
         } else {
             send_(player.socket, "Invalid Choice!\n");
