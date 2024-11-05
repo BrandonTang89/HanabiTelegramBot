@@ -1,15 +1,14 @@
+#include "../inc/game.h"
 
-#include "game.h"
-
-#include <boost/log/trivial.hpp>
+#include "../inc/pch.h"
 #include <iostream>
 
-#include "card.h"
-#include "deck.h"
-#include "helper.h"
-#include "player.h"
-#include "session.h"
-#include "sockets.h"
+#include "../inc/card.h"
+#include "../inc/deck.h"
+#include "../inc/helper.h"
+#include "../inc/player.h"
+#include "../inc/session.h"
+#include "../inc/sockets.h"
 
 Game::Game(Session&& session)
     : players{std::move(session.players)},
