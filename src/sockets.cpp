@@ -1,7 +1,5 @@
-#include "../inc/sockets.h"
-
-#include <boost/asio.hpp>
-#include <boost/log/trivial.hpp>
+#include "sockets.h"
+#include "pch.h"
 #include <string>
 using boost::asio::ip::tcp;
 using std::string;

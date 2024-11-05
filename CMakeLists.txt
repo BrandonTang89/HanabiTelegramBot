@@ -1,6 +1,9 @@
 cmake_minimum_required(VERSION 3.5.0)
 project(HanabiGame VERSION 0.1.0 LANGUAGES C CXX)
+set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Compile Protobuf files
 find_package(Protobuf REQUIRED)
 include_directories(${Protobuf_INCLUDE_DIRS})
 include_directories(${CMAKE_CURRENT_BINARY_DIR})
@@ -36,9 +39,8 @@ endforeach()
 add_library(proto_files ${PROTO_SRCS} ${PROTO_HDRS})
 target_link_libraries(proto_files ${Protobuf_LIBRARIES})
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-find_package(Boost 1.70 REQUIRED COMPONENTS filesystem system log)
+# Build the main executable
+find_package(Boost 1.70 REQUIRED COMPONENTS system log)
 add_compile_options(-Winvalid-pch -fsanitize=address)
 add_link_options(-fsanitize=address)
 
@@ -48,4 +50,4 @@ target_include_directories(HanabiGame PRIVATE inc ${PROTO_OUT} ${Boost_INCLUDE_D
 target_link_libraries(HanabiGame ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
 
 include(CTest)
-enable_testing()
+enable_testing() 

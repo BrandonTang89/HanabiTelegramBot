@@ -1,4 +1,4 @@
-#include "../inc/player.h"
+#include "player.h"
 
 Player::Player(string name_, tcp::socket socket_) : name{std::move(name_)}, socket{std::move(socket_)} {}
 

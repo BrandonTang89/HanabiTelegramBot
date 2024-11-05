@@ -1,7 +1,6 @@
-#include <string>
 #include <iostream>
+#include "card.h"
 #include <cassert>
-#include "../inc/card.h"
 
 using std::string;
 

@@ -1,14 +1,13 @@
-#include "../inc/game.h"
-
-#include "../inc/pch.h"
 #include <iostream>
 
-#include "../inc/card.h"
-#include "../inc/deck.h"
-#include "../inc/helper.h"
-#include "../inc/player.h"
-#include "../inc/session.h"
-#include "../inc/sockets.h"
+#include "game.h"
+#include "pch.h"
+#include "card.h"
+#include "deck.h"
+#include "helper.h"
+#include "player.h"
+#include "session.h"
+#include "sockets.h"
 
 Game::Game(Session&& session)
     : players{std::move(session.players)},
