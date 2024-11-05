@@ -1,9 +1,9 @@
 #include <boost/log/trivial.hpp>
 #include <cassert>
 
-#include "session.h"
-#include "player.h"
-#include "sockets.h"
+#include "../inc/session.h"
+#include "../inc/player.h"
+#include "../inc/sockets.h"
 
 // Constructor
 Session::Session(Player leader_, int sessionId_) : sessionId{sessionId_} {

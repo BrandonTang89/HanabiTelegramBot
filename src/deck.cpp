@@ -1,7 +1,7 @@
-#include "deck.h" 
-#include "card.h"
+#include "../inc/deck.h" 
+#include "../inc/card.h"
 #include <cassert>
-#include <boost/log/trivial.hpp>
+#include "../inc/pch.h"
 
 Deck::Deck(){
     std::random_device rd;

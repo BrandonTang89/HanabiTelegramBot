@@ -1,12 +1,12 @@
 #include <iostream>
 #include <mutex>
 
-#include "pch.h"
-#include "game.h"
-#include "helper.h"
-#include "player.h"
-#include "session.h"
-#include "sockets.h"
+#include "../inc/pch.h"
+#include "../inc/game.h"
+#include "../inc/helper.h"
+#include "../inc/player.h"
+#include "../inc/session.h"
+#include "../inc/sockets.h"
 
 using namespace boost::asio;
 using ip::tcp;
