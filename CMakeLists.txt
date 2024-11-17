@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.5.0)
 project(HanabiGame VERSION 0.1.0 LANGUAGES C CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_compile_options(-Winvalid-pch -fsanitize=address)
+add_link_options(-fsanitize=address)
 
 # Compile Protobuf files
 find_package(Protobuf REQUIRED)
@@ -36,23 +38,32 @@ foreach(PROTO_FILE ${PROTO_FILES})
     list(APPEND PROTO_HDRS ${PROTO_HDR})
 endforeach()
 
-add_library(proto_files ${PROTO_SRCS} ${PROTO_HDRS})
-target_link_libraries(proto_files ${Protobuf_LIBRARIES})
+# add_library(proto_files ${PROTO_SRCS} ${PROTO_HDRS})
+# target_link_libraries(proto_files ${Protobuf_LIBRARIES})
 
 # Build the main executable
 find_package(Boost 1.70 REQUIRED COMPONENTS system log)
-add_compile_options(-Winvalid-pch -fsanitize=address)
-add_link_options(-fsanitize=address)
-
 add_executable(HanabiGame ${PROTO_SRCS} src/card.cpp src/deck.cpp src/game.cpp src/player.cpp src/server.cpp src/session.cpp src/sockets.cpp)
 target_precompile_headers(HanabiGame PRIVATE inc/pch.h)
 target_include_directories(HanabiGame PRIVATE inc ${PROTO_OUT} ${Boost_INCLUDE_DIRS})
 target_link_libraries(HanabiGame ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
 
+
+# Build the Telegram client executable
+set(Boost_USE_MULTITHREADED ON)
+find_package(Threads REQUIRED)
+find_package(OpenSSL REQUIRED)
+find_package(CURL)
+include_directories(/usr/local/include ${OPENSSL_INCLUDE_DIR} ${Boost_INCLUDE_DIR})
+if (CURL_FOUND)
+    include_directories(${CURL_INCLUDE_DIRS})
+    add_definitions(-DHAVE_CURL)
+endif()
+
 add_executable(HanabiTelegramClient ${PROTO_SRCS} src/telegram_client.cpp src/sockets.cpp)
 target_precompile_headers(HanabiTelegramClient PRIVATE inc/pch.h)
 target_include_directories(HanabiTelegramClient PRIVATE inc ${PROTO_OUT} ${Boost_INCLUDE_DIRS})
-target_link_libraries(HanabiTelegramClient ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
+target_link_libraries(HanabiTelegramClient /usr/local/lib/libTgBot.a ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
 
 include(CTest)
 enable_testing() 

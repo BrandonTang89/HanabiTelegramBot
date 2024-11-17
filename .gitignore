@@ -6,3 +6,6 @@ server
 
 # Ignore the build directory
 out/
+
+# Ignore the environment file
+.env

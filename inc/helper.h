@@ -33,5 +33,4 @@ inline void broadcast(std::vector<Player>& players, const std::string& message) 
     }
 }
 
-
 #endif // HELPER_H

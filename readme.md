@@ -3,11 +3,13 @@ This repo aims to allow one to play the [Hanabi Game](https://boardgamegeek.com/
 
 There are 2 parts to this process
 - A server that runs the actual game
-- A server that is the bot
+- A server that runs the telegram bot
 
 The point of this dual server approach is to separate the logic for running the game from the logic for handling the telegram bot, potentially allowing for cross platform games in the future.
 
-Between the 2 different servers, we will use JSON to communicate.
+Between the 2 different servers, we will use google's [Protocol Buffers](https://protobuf.dev/) to communicate.
+
+We will use [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) as the telegram bot framework.
 
 ## Project Structure
 
