@@ -1,6 +1,6 @@
 #include "player.h"
 
-Player::Player(string name_, tcp::socket socket_) : name{std::move(name_)}, socket{std::move(socket_)} {}
+Player::Player(string name_, tcp::socket&& socket_) : name{std::move(name_)}, socket{std::move(socket_)} {}
 
 Player::Player(Player&& source) noexcept : name{std::move(source.name)}, socket{std::move(source.socket)} {}
 

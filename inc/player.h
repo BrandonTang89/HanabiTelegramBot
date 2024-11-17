@@ -12,7 +12,7 @@ class Player {
     string name;
     tcp::socket socket;
 
-    Player(string name_, tcp::socket socket_);
+    Player(string name_, tcp::socket&& socket_);
 
     // Move Constructor and Assignment Operations
     Player(Player&& source) noexcept;
