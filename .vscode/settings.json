@@ -88,7 +88,8 @@
         "syncstream": "cpp",
         "valarray": "cpp",
         "cassert": "cpp",
-        "format": "cpp"
+        "format": "cpp",
+        "text_encoding": "cpp"
     },
     "makefile.configureOnOpen": true,
     "C_Cpp.default.compilerPath": "/usr/bin/g++"

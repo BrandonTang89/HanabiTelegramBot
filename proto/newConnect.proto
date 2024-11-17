@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-enum Operation {
+enum ClientOperation {
     OP_CREATE_SESSION = 0;
     OP_JOIN_SPECIFIC_SESSION = 1;
     OP_JOIN_RANDOM_SESSION = 2;
@@ -8,6 +8,6 @@ enum Operation {
 
 message NewConnection {
     string name = 1;
-    Operation operation = 2; 
+    ClientOperation operation = 2; 
     int32 session_id = 3; // only used when operation is OP_JOIN_SPECIFIC_SESSION
 }

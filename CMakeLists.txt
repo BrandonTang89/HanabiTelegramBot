@@ -49,5 +49,10 @@ target_precompile_headers(HanabiGame PRIVATE inc/pch.h)
 target_include_directories(HanabiGame PRIVATE inc ${PROTO_OUT} ${Boost_INCLUDE_DIRS})
 target_link_libraries(HanabiGame ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
 
+add_executable(HanabiTelegramClient ${PROTO_SRCS} src/telegram_client.cpp src/sockets.cpp)
+target_precompile_headers(HanabiTelegramClient PRIVATE inc/pch.h)
+target_include_directories(HanabiTelegramClient PRIVATE inc ${PROTO_OUT} ${Boost_INCLUDE_DIRS})
+target_link_libraries(HanabiTelegramClient ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
+
 include(CTest)
 enable_testing() 

@@ -97,35 +97,30 @@ void join_session(Player joiner) {
     // no more control over joiner
 }
 
-std::optional<string> getName(tcp::socket& socket) {
-    while (true) {
-        send_(socket, "Please enter your name");
-        std::optional<string> name_opt{_readCatch(socket)};
-        if (!name_opt.has_value()) {
-            return std::nullopt;
-        }
-        string name{name_opt.value()};
 
-        // name validation
-        if (name.empty()) {
-            send_(socket, "Name cannot be empty!\n");
-        } else {
-            return name_opt;
-        }
-    }
-}
 
 void handle_client(tcp::socket socket) {
     // Greet Client
-    send_(socket, "Welcome to Hanbi!\n");
+    send_(socket, "Welcome to Hanbi! Send your name! \n");
 
     // Get name and build player object
-    std::optional<string> name_opt{getName(socket)};
-    if (!name_opt.has_value()) {
+    std::optional<string> connectionRequestOpt{_readCatch(socket)};
+    if (!connectionRequestOpt.has_value()) {
         BOOST_LOG_TRIVIAL(info) << "Client disconnected!";
         return;
     }
-    string name{name_opt.value()};
+    string connectionRequestStr{connectionRequestOpt.value()};
+
+    BOOST_LOG_TRIVIAL(debug) << "Received: " << connectionRequestStr;
+
+    NewConnection NewConnection;
+    if (!NewConnection.ParseFromString(connectionRequestStr)) {
+        BOOST_LOG_TRIVIAL(error) << "Bad connection request! dropping connection...";
+        return;
+    }
+
+    string name{NewConnection.name()};
+    ClientOperation operation{NewConnection.operation()};
 
     BOOST_LOG_TRIVIAL(info) << "New Client: " << name;
     Player player{name, std::move(socket)};

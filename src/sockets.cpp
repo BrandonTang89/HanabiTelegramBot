@@ -6,8 +6,6 @@ using std::string;
 
 // Functions for Sending on Sockets
 string read_(tcp::socket& socket) {
-    send_(socket, ": ");  // Send prompt to client
-
     boost::asio::streambuf buf;
     boost::asio::read_until(socket, buf, "\n");
     string data = boost::asio::buffer_cast<const char*>(buf.data());
