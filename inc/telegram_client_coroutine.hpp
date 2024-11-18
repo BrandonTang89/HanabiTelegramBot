@@ -13,7 +13,7 @@ class Awaitable {
     Awaitable(std::queue<T>& queue) : queue_(queue) {}
 
     bool await_ready() const noexcept {
-        return false;
+        return !queue_.empty();
     }
 
     void await_suspend(std::coroutine_handle<> handle) {}
@@ -32,7 +32,7 @@ struct ClientCoroutine {
     struct promise_type {
         ClientCoroutine get_return_object() { return ClientCoroutine{std::coroutine_handle<promise_type>::from_promise(*this)}; }
         std::suspend_never initial_suspend() { return {}; }
-        std::suspend_never final_suspend() noexcept { return {}; }
+        std::suspend_always final_suspend() noexcept { return {}; }
         void return_void() {}
         void unhandled_exception() { std::terminate(); }
     };

@@ -16,17 +16,25 @@ class ChatSessions {
     ChatSessions(TgBot::Bot& bot) : bot(bot) {}
 
     bool hasSession(ChatIdType chatId) const {
-        return chatCoroutines.find(chatId) != chatCoroutines.end();
+        if (chatCoroutines.find(chatId) == chatCoroutines.end() ) return false;
+        if (!chatCoroutines.at(chatId).handle) return false;
+        if (chatCoroutines.at(chatId).handle.done()) return false;
+        return true;
     }
 
     void createNewSession(ChatIdType chatId, TgBot::Bot& bot) {
         // new clients are handled via clientEntry coroutine
-        chatCoroutines.emplace(chatId, ClientCoroutine(clientEntry(chatId, chatMessageQueues[chatId], bot)));
+        chatCoroutines.insert_or_assign(chatId, ClientCoroutine(clientEntry(chatId, chatMessageQueues[chatId], bot)));
     }
 
     void passMessage(ChatIdType chatId, std::string message) {
         chatMessageQueues[chatId].push(message);
         chatCoroutines.at(chatId).handle.resume();
+    }
+
+    void removeSession(ChatIdType chatId) {
+        chatCoroutines.erase(chatId);
+        chatMessageQueues.erase(chatId);
     }
 };
 
@@ -40,6 +48,9 @@ int main() {
             BOOST_LOG_TRIVIAL(info) << "Creating new chat session for chat " << message->chat->id;
             chatSessions.createNewSession(message->chat->id, bot);
         }
+
+        // BOOST_LOG_TRIVIAL(trace) << "Passing message to chat session for chat " << message->chat->id;
+        // BOOST_LOG_TRIVIAL(trace) << "Message: " << message->text;
         chatSessions.passMessage(message->chat->id, message->text);
     });
 
