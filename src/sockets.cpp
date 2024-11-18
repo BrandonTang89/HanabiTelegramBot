@@ -1,10 +1,12 @@
 #include "sockets.h"
-#include "pch.h"
+
 #include <string>
+
+#include "pch.h"
 using boost::asio::ip::tcp;
 using std::string;
+#include "base64.hpp"
 
-// Functions for Sending on Sockets
 string read_(tcp::socket& socket) {
     boost::asio::streambuf buf;
     boost::asio::read_until(socket, buf, "\n");
@@ -13,7 +15,7 @@ string read_(tcp::socket& socket) {
         data.pop_back();
     }
 
-    // BOOST_LOG_TRIVIAL(trace) << "Received: " << data;
+    BOOST_LOG_TRIVIAL(trace) << "Received: " << data;
     return data;
 }
 
@@ -26,9 +28,29 @@ std::optional<string> _readCatch(tcp::socket& socket) noexcept {
     }
 }
 
+string readBase64(tcp::socket& socket) {
+    string base64Message = read_(socket);
+    return base64::from_base64(base64Message);
+}
+
+std::optional<string> readBase64Catch(tcp::socket& socket) noexcept {
+    try {
+        return readBase64(socket);
+    } catch (const std::exception& e) {
+        BOOST_LOG_TRIVIAL(error) << "Error reading message: " << e.what();
+        return std::nullopt;
+    }
+}
+
+void sendBase64(tcp::socket& socket, const string& message) {
+    string base64Message = base64::to_base64(message);
+    send_(socket, base64Message + '\n');
+}
+
 void send_(tcp::socket& socket, const string& message) noexcept {
     try {
-        const string msg = message + "\n";
+        const string msg = message;
+        BOOST_LOG_TRIVIAL(trace) << "Sending: " << message;
         boost::asio::write(socket, boost::asio::buffer(message));
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << "Error sending message: " << e.what();

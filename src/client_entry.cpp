@@ -1,9 +1,11 @@
 #include "client_entry.h"
 
-#include "telegram_client_coroutine.hpp"
+#include "ack.pb.h"
 #include "newConnect.pb.h"
 #include "pch.h"
 #include "sockets.h"
+#include "telegram_client_coroutine.hpp"
+
 using namespace boost::asio;
 
 ClientCoroutine clientEntry(ChatIdType chatId, std::queue<std::string>& messageQueue, TgBot::Bot& bot) {
@@ -12,10 +14,19 @@ ClientCoroutine clientEntry(ChatIdType chatId, std::queue<std::string>& messageQ
     io_service io_service;
     ip::tcp::socket socket(io_service);
     socket.connect(ip::tcp::endpoint(ip::address::from_string("127.0.0.1"), 1234));
+    BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " connected to server";
+    
+    // Read welcome acknowledgement from server
+    Ack ack;
+    std::string serialisedAck = readBase64(socket);
+    ack.ParseFromString(serialisedAck);
+    if (ack.status() != AckStatus::ACK_SUCCEED) {
+        BOOST_LOG_TRIVIAL(error) << "Failed to connect to server!";
+        co_return;
+    }
 
-    // // Read welcome message from server
-    std::string welcome = read_(socket);
     std::string name = "Telegram User " + std::to_string(chatId);
+    BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " sending NewConnection message to server";
 
     NewConnection newConnection;
     newConnection.set_name(name);
@@ -23,9 +34,8 @@ ClientCoroutine clientEntry(ChatIdType chatId, std::queue<std::string>& messageQ
     newConnection.set_session_id(0);
 
     // Send the NewConnection message to the server
-    std::string serialized;
-    newConnection.SerializeToString(&serialized);
-    send_(socket, serialized);
+    std::string serialized = newConnection.SerializeAsString();
+    sendBase64(socket, serialized);
 
     printf("Sent NewConnection message to server\n");
     while (true) {

@@ -13,6 +13,7 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR}/proto)  # Include the proto outp
 
 set(PROTO_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/proto/newConnect.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/proto/ack.proto
     # Add more .proto files here
 )
 
