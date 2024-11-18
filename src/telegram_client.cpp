@@ -31,11 +31,6 @@ class ChatSessions {
         chatMessageQueues[chatId].push(message);
         chatCoroutines.at(chatId).handle.resume();
     }
-
-    void removeSession(ChatIdType chatId) {
-        chatCoroutines.erase(chatId);
-        chatMessageQueues.erase(chatId);
-    }
 };
 
 int main() {
