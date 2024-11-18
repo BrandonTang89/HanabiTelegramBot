@@ -60,7 +60,7 @@ if (CURL_FOUND)
     add_definitions(-DHAVE_CURL)
 endif()
 
-add_executable(HanabiTelegramClient ${PROTO_SRCS} src/telegram_client.cpp src/sockets.cpp)
+add_executable(HanabiTelegramClient ${PROTO_SRCS} src/telegram_client.cpp src/sockets.cpp src/client_entry.cpp)
 target_precompile_headers(HanabiTelegramClient PRIVATE inc/pch.h)
 target_include_directories(HanabiTelegramClient PRIVATE inc ${PROTO_OUT} ${Boost_INCLUDE_DIRS})
 target_link_libraries(HanabiTelegramClient /usr/local/lib/libTgBot.a ${CMAKE_THREAD_LIBS_INIT} ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
