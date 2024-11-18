@@ -15,3 +15,7 @@ We will use [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) as the telegram bot
 
 - `./inc` - Contains all the header (`.h`) files.
 - `./src` - Contains all the source (`.cpp`) files.
+
+
+## Telegram Client Handling
+Handling multiple clients at once is a concurrency issue. We will initially start with an approach that just uses a single thread and coroutines to handle the various clients. It is a problem for later to expand this into a threadpool.
