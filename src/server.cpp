@@ -105,10 +105,10 @@ void handle_client(tcp::socket socket) {
     ack.set_status(AckStatus::ACK_SUCCEED);
     ack.set_message("Welcome to the server!");
     std::string serialisedAck = ack.SerializeAsString();
-    sendBase64(socket, serialisedAck);
+    sendBytes(socket, serialisedAck);
 
     // Get name and build player object
-    std::optional<string> serialisedNewConnectionOpt{readBase64Catch(socket)};
+    std::optional<string> serialisedNewConnectionOpt{readBytesCatch(socket)};
     if (!serialisedNewConnectionOpt.has_value()) {
         BOOST_LOG_TRIVIAL(info) << "Client disconnected!";
         return;

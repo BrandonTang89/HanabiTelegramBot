@@ -18,7 +18,7 @@ ClientCoroutine clientEntry(ChatIdType chatId, std::queue<std::string>& messageQ
     
     // Read welcome acknowledgement from server
     Ack ack;
-    std::string serialisedAck = readBase64(socket);
+    std::string serialisedAck = readBytes(socket);
     ack.ParseFromString(serialisedAck);
     if (ack.status() != AckStatus::ACK_SUCCEED) {
         BOOST_LOG_TRIVIAL(error) << "Failed to connect to server!";
@@ -35,7 +35,7 @@ ClientCoroutine clientEntry(ChatIdType chatId, std::queue<std::string>& messageQ
 
     // Send the NewConnection message to the server
     std::string serialized = newConnection.SerializeAsString();
-    sendBase64(socket, serialized);
+    sendBytes(socket, serialized);
 
     printf("Sent NewConnection message to server\n");
     while (true) {
