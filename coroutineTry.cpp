@@ -50,6 +50,7 @@ struct ClientCoroutine {
 
     ClientCoroutine(std::coroutine_handle<promise_type> h) : handle(h) {}
     ~ClientCoroutine() {
+        std::cout << "Destroying coroutine" << std::endl;
         if (handle) handle.destroy();
     }
 };
