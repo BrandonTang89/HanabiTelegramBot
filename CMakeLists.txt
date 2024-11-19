@@ -41,10 +41,11 @@ endforeach()
 
 # Build the main executable
 find_package(Boost 1.70 REQUIRED COMPONENTS system log)
-add_executable(HanabiGame ${PROTO_SRCS} src/card.cpp src/deck.cpp src/game.cpp src/player.cpp src/server.cpp src/session.cpp src/sockets.cpp)
+add_executable(HanabiGame ${PROTO_SRCS} src/card.cpp src/deck.cpp src/game.cpp src/player.cpp src/server.cpp src/session.cpp src/sockets.cpp src/boost_asio_impl.cpp)
 target_precompile_headers(HanabiGame PRIVATE inc/pch.h)
 target_include_directories(HanabiGame PRIVATE inc ${PROTO_OUT})
 target_link_libraries(HanabiGame ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
+target_compile_definitions(HanabiGame PRIVATE BOOST_ASIO_SEPARATE_COMPILATION)
 
 # Build the Telegram client executable
 find_package(Threads REQUIRED)
@@ -56,7 +57,8 @@ if(CURL_FOUND)
     add_definitions(-DHAVE_CURL)
 endif()
 
-add_executable(HanabiTelegramClient ${PROTO_SRCS} src/telegram_client.cpp src/sockets.cpp src/client_entry.cpp)
-target_precompile_headers(HanabiTelegramClient PRIVATE inc/pch.h)
+add_executable(HanabiTelegramClient ${PROTO_SRCS} src/telegram_client.cpp src/sockets.cpp src/client_entry.cpp src/boost_asio_impl.cpp)
+target_precompile_headers(HanabiTelegramClient PRIVATE inc/pch.h inc/telegram_client_pch.h)
 target_include_directories(HanabiTelegramClient PRIVATE inc ${PROTO_OUT})
 target_link_libraries(HanabiTelegramClient /usr/local/lib/libTgBot.a ${OPENSSL_LIBRARIES} ${CURL_LIBRARIES} ${Boost_LIBRARIES} ${Protobuf_LIBRARIES})
+target_compile_definitions(HanabiTelegramClient PRIVATE BOOST_ASIO_SEPARATE_COMPILATION)
