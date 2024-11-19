@@ -1,11 +1,7 @@
 #ifndef TELEGRAM_CLIENT_COROUTINE_HPP
 #define TELEGRAM_CLIENT_COROUTINE_HPP
-#include <tgbot/tgbot.h>
-
 #include <coroutine>
-#include <iostream>
 #include <queue>
-#include <string>
 
 template <typename T>
 class Awaitable {

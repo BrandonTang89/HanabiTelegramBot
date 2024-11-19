@@ -1,11 +1,7 @@
-#include <tgbot/tgbot.h>
-
-#include <coroutine>
-#include <cstdlib>
-
 #include "client_entry.h"
 #include "loadenv.h"
 #include "telegram_client_coroutine.hpp"
+#include "telegram_client_pch.h"
 
 class ChatSessions {
     TgBot::Bot& bot;

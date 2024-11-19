@@ -1,5 +1,7 @@
 #include <iostream>
 #include <mutex>
+#include <optional>
+#include <thread>
 
 #include "pch.h"
 #include "game.h"
@@ -7,10 +9,8 @@
 #include "player.h"
 #include "session.h"
 #include "sockets.h"
-
 #include "newConnect.pb.h"
 #include "ack.pb.h"
-#include <boost/beast/core/detail/base64.hpp>
 
 using namespace boost::asio;
 using ip::tcp;
