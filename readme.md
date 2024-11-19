@@ -12,14 +12,13 @@ Between the 2 different servers, we will use google's [Protocol Buffers](https:/
 We will use [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) as the telegram bot framework.
 
 ## Dependencies
+We require a compiler that supports C++23 (or at least C++20 for coroutines, but I did not try building with C++20). This project has only been tested with GNU GCC version 13.2.0.
+
 We need to install [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) as well as the [C++ boost libary](https://www.boost.org/). 
 
-We require a compiler that supports C++23 (or at least C++20 for coroutines, but I did not try building with C++20).
-
-To install libboost on an Ubuntu/Debian system:
-
+To speed up compilation, we use [ccache](https://ccache.dev/) and [Ninja](https://github.com/ninja-build/ninja).
 ```sh
-sudo apt-get install libboost-all-dev
+sudo apt-get install libboost-all-dev ninja-build ccache
 ```
 
 ## The Game Server
