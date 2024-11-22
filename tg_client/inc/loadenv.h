@@ -6,7 +6,7 @@
 
 inline void loadEnv() {
     // Get the directory of the current source file
-    std::filesystem::path sourceDir = std::filesystem::path(__FILE__).parent_path().parent_path();  // at the root of the project
+    std::filesystem::path sourceDir = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path();  // at the root of the project
     std::filesystem::path envFilePath = sourceDir / ".env";
 
     std::ifstream envFile(envFilePath);

@@ -30,23 +30,52 @@ ClientCoroutine clientEntry(ChatIdType chatId, std::queue<std::string>& messageQ
     std::string dummy = co_await Awaitable<std::string>(messageQueue);
 
     // Display welcome message to user
-    std::string welcomeMessage = "Welcome to Hanabi! Enter /quit anytime to exit."; 
-    TgBot::ReplyKeyboardMarkup::Ptr nameKeyboard(new TgBot::ReplyKeyboardMarkup);
-    createOneColumnKeyboard({"/enterName", "/quit"}, nameKeyboard);
-    bot.getApi().sendMessage(chatId, welcomeMessage, nullptr, nullptr, nameKeyboard);
+    std::string welcomeMessage = "Welcome to Hanabi!\n Enter /quit anytime to exit. \n Please enter your name:"; 
+    // TgBot::ReplyKeyboardMarkup::Ptr nameKeyboard(new TgBot::ReplyKeyboardMarkup);
+    // createOneColumnKeyboard({"/enterName", "/quit"}, nameKeyboard);
+    bot.getApi().sendMessage(chatId, welcomeMessage);
 
     // Wait for user to select to enter name
-    std::string cmd = co_await Awaitable<std::string>(messageQueue);
-    BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received command: " << cmd;
-    
-    if (cmd == "/quit") {
-        BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " quit!";
-        co_return;
+    // if (cmd == "/quit") {
+    //     BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " quit!";
+    //     bot.getApi().sendMessage(chatId, "Goodbye!");
+    //     co_return;
+    // }
+
+    // === Get the Name ===
+    std::string name = co_await Awaitable<std::string>(messageQueue);
+    while (name.empty() || name[0] == '/') {
+        bot.getApi().sendMessage(chatId, "Name cannot be empty or begin with a /\n Please enter your name:");
+        name = co_await Awaitable<std::string>(messageQueue);
+    }
+    BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received name: " << name;
+
+    // === Get the Operation ===
+    std::vector<std::string> operationStrings = {"/createSession", "/joinSession", "/joinRandomSession"};
+    TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
+    createOneColumnKeyboard(operationStrings, operationKeyboard);
+    bot.getApi().sendMessage(chatId, "Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
+    std::string operation = co_await Awaitable<std::string>(messageQueue);
+    while (operation.empty() || find(operationStrings.begin(), operationStrings.end(), operation) == operationStrings.end()) {
+        bot.getApi().sendMessage(chatId, "Invalid operation! Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
+        operation = co_await Awaitable<std::string>(messageQueue);
+    }
+    BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received operation: " << operation;
+
+    // === Get the Session ID ===
+    std::optional<int> sessionId;
+    if (operation == "/joinSession") {
+        bot.getApi().sendMessage(chatId, "Please enter the session ID:");
+        std::string sessionIdStr = co_await Awaitable<std::string>(messageQueue);
+        while (sessionIdStr.empty() || !std::all_of(sessionIdStr.begin(), sessionIdStr.end(), ::isdigit)) {
+            bot.getApi().sendMessage(chatId, "Session ID should be a number! Please enter the session ID:");
+            sessionIdStr = co_await Awaitable<std::string>(messageQueue);
+        }
+        sessionId = std::stoi(sessionIdStr);
+        BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received session ID: " << sessionId.value();
     }
 
-    std::string name = "Telegram User " + std::to_string(chatId);
     BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " sending NewConnection message to server";
-
     NewConnection newConnection;
     newConnection.set_name(name);
     newConnection.set_operation(ClientOperation::OP_CREATE_SESSION);
