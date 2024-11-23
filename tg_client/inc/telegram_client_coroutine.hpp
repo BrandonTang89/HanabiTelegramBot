@@ -2,6 +2,72 @@
 #define TELEGRAM_CLIENT_COROUTINE_HPP
 #include <coroutine>
 #include <queue>
+#include <iostream>
+#include "pch.h"
+
+class [[nodiscard]] Task {
+   public:
+    struct FinalAwaiter {
+        bool await_ready() const noexcept { return false; }
+        template <typename P>
+        void await_suspend(std::coroutine_handle<P> handle) noexcept {
+            handle.promise().continuation.resume();  // resume the caller's coroutine
+            // return handle.promise().continuation; // symmetric
+        }
+        void await_resume() const noexcept {}
+    };
+
+    struct Promise {
+        std::coroutine_handle<> continuation = nullptr;
+        Task get_return_object() {
+            return Task{std::coroutine_handle<Promise>::from_promise(*this)};
+        }
+
+        void unhandled_exception() noexcept {}
+        void return_void() noexcept {}
+        std::suspend_always initial_suspend() noexcept { return {}; }  // suspend immediately, the caller should put the coroutine on the stack to allow message passing
+        FinalAwaiter final_suspend() noexcept { return {}; }
+    };
+    using promise_type = Promise;
+    std::coroutine_handle<Promise> handle_ = nullptr;
+
+    struct Awaiter {
+        std::coroutine_handle<Promise> handle;
+
+        bool await_ready() const noexcept { return false; }
+        void await_suspend(std::coroutine_handle<> calling) noexcept {
+            handle.promise().continuation = calling;  // store the caller's coroutine handle in the promise
+            handle.resume();
+        }
+        void await_resume() const noexcept {}
+    };
+
+    // Task is awaitable since it has a co_await operator that returns an awaiter
+    auto operator co_await() noexcept {
+        if (!handle_) {
+            BOOST_LOG_TRIVIAL(fatal) << "Task is not properly initialised!";
+        }
+        return Awaiter{handle_};
+    }
+
+
+    ~Task() {  // destroy the coroutine when the task is destroyed
+        if (handle_) {
+            BOOST_LOG_TRIVIAL(trace) << "Destroying coroutine";
+            handle_.destroy();
+        }
+    }
+
+    Task(const Task&) = delete;
+    Task(Task&& other) noexcept : handle_(other.handle_) {
+        other.handle_ = nullptr;
+    }
+
+   private:
+    explicit Task(std::coroutine_handle<Promise> handle)
+        : handle_(handle) {
+    }
+};
 
 template <typename T>
 class Awaitable {

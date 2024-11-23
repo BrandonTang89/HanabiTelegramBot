@@ -2,10 +2,13 @@
 #include "loadenv.h"
 #include "telegram_client_coroutine.hpp"
 #include "telegram_client_pch.h"
+#include <iostream>
+#include <memory>
 
+#include <stack>
 class ChatSessions {
     TgBot::Bot& bot;
-    std::unordered_map<ChatIdType, ClientCoroutine> chatCoroutines;
+    std::unordered_map<ChatIdType, std::stack<Task>> chatCoroutines;
     std::unordered_map<ChatIdType, std::queue<std::string>> chatMessageQueues;
 
    public:
@@ -13,19 +16,24 @@ class ChatSessions {
 
     bool hasSession(ChatIdType chatId) const {
         if (chatCoroutines.find(chatId) == chatCoroutines.end() ) return false;
-        if (!chatCoroutines.at(chatId).handle) return false;
-        if (chatCoroutines.at(chatId).handle.done()) return false;
+        if (!chatCoroutines.at(chatId).top().handle_) return false;
+        if (chatCoroutines.at(chatId).top().handle_.done()) return false;
         return true;
     }
 
     void createNewSession(ChatIdType chatId, TgBot::Bot& bot) {
         // new clients are handled via clientEntry coroutine
-        chatCoroutines.insert_or_assign(chatId, ClientCoroutine(clientEntry(chatId, chatMessageQueues[chatId], bot)));
+        chatCoroutines.insert_or_assign(chatId, std::stack<Task>());
+        chatMessageQueues.insert_or_assign(chatId, std::queue<std::string>());
+        BOOST_LOG_TRIVIAL(trace) << "Creating new chat session for chat " << chatId;
+        chatCoroutines.at(chatId).emplace(clientEntry(chatId, chatMessageQueues.at(chatId), chatCoroutines.at(chatId), bot));
+        BOOST_LOG_TRIVIAL(trace) << "Placed coroutine on stack " << chatId;
+        chatCoroutines.at(chatId).top().handle_.resume();
     }
 
     void passMessage(ChatIdType chatId, std::string message) {
         chatMessageQueues[chatId].push(message);
-        chatCoroutines.at(chatId).handle.resume();
+        chatCoroutines.at(chatId).top().handle_.resume();
     }
 };
 
