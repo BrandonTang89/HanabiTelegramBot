@@ -5,10 +5,10 @@
 #include <stack>
 #include <string>
 #include "telegram_client_coroutine.hpp"
+#include "telegram_client_pch.h"
 #include <tgbot/tgbot.h>
 
-using ChatIdType = std::int64_t;
-Task clientEntry(ChatIdType chatId, std::queue<std::string>& messageQueue, std::stack<Task>& coroutineStack, TgBot::Bot& bot);
+Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<Task>& coroutineStack, TgBot::Bot& bot);
 
 
 #endif // CLIENT_ENTRY_H

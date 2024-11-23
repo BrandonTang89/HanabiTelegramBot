@@ -9,7 +9,7 @@
 class ChatSessions {
     TgBot::Bot& bot;
     std::unordered_map<ChatIdType, std::stack<Task>> chatCoroutines;
-    std::unordered_map<ChatIdType, std::queue<std::string>> chatMessageQueues;
+    std::unordered_map<ChatIdType, std::queue<TgMsg>> chatMessageQueues;
 
    public:
     ChatSessions(TgBot::Bot& bot) : bot(bot) {}
@@ -21,17 +21,15 @@ class ChatSessions {
         return true;
     }
 
-    void createNewSession(ChatIdType chatId, TgBot::Bot& bot) {
+    void createNewSession(ChatIdType chatId) {
         // new clients are handled via clientEntry coroutine
         chatCoroutines.insert_or_assign(chatId, std::stack<Task>());
-        chatMessageQueues.insert_or_assign(chatId, std::queue<std::string>());
-        BOOST_LOG_TRIVIAL(trace) << "Creating new chat session for chat " << chatId;
+        chatMessageQueues.insert_or_assign(chatId, std::queue<TgMsg>());
         chatCoroutines.at(chatId).emplace(clientEntry(chatId, chatMessageQueues.at(chatId), chatCoroutines.at(chatId), bot));
-        BOOST_LOG_TRIVIAL(trace) << "Placed coroutine on stack " << chatId;
         chatCoroutines.at(chatId).top().handle_.resume();
     }
 
-    void passMessage(ChatIdType chatId, std::string message) {
+    void passMessage(ChatIdType chatId, TgMsg message) {
         chatMessageQueues[chatId].push(message);
         chatCoroutines.at(chatId).top().handle_.resume();
     }
@@ -45,12 +43,12 @@ int main() {
     bot.getEvents().onAnyMessage([&bot, &chatSessions](TgBot::Message::Ptr message) {
         if (!chatSessions.hasSession(message->chat->id)) {
             BOOST_LOG_TRIVIAL(info) << "Creating new chat session for chat " << message->chat->id;
-            chatSessions.createNewSession(message->chat->id, bot);
+            chatSessions.createNewSession(message->chat->id);
         }
 
         // BOOST_LOG_TRIVIAL(trace) << "Passing message to chat session for chat " << message->chat->id;
         // BOOST_LOG_TRIVIAL(trace) << "Message: " << message->text;
-        chatSessions.passMessage(message->chat->id, message->text);
+        chatSessions.passMessage(message->chat->id, message);
     });
 
     try {
