@@ -1,0 +1,12 @@
+syntax = "proto3";
+
+enum JoinRandomSessionType {
+    JOIN_RANDOM_SESSION_ACK_UNSPECIFIED = 0;
+    JOIN_RANDOM_SESSION_NEW_SESSION = 1;
+    JOIN_RANDOM_SESSION_EXISTING_SESSION = 2;
+}
+message JoinRandomSessionAck {
+    optional JoinRandomSessionType session_type = 1;
+    optional int32 session_id = 2;
+    optional string message = 3;
+}

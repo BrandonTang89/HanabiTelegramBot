@@ -3,17 +3,21 @@
 #include <optional>
 #include <thread>
 
-#include "pch.h"
 #include "game.h"
 #include "helper.h"
+#include "NewConnect.pb.h"
+#include "Ack.pb.h"
+#include "JoinRandomSessionAck.pb.h"
+#include "CreateSessionAck.pb.h"
+#include "JoinSessionAck.pb.h"
+#include "pch.h"
 #include "player.h"
 #include "session.h"
 #include "sockets.h"
-#include "newConnect.pb.h"
-#include "ack.pb.h"
 
 using namespace boost::asio;
 using ip::tcp;
+using namespace Ack;
 using std::string;
 
 static std::mutex sessions_mutex;
@@ -32,76 +36,127 @@ void create_session(Player leader) {
     lock.unlock();
     BOOST_LOG_TRIVIAL(debug) << sessions[session_id] << " created";
 
+    // Send the session id to the leader
+    CreateSessionAck ack;
+    ack.set_status(AckStatus::ACK_SUCCEED);
+    ack.set_message("Session created successfully!");
+    ack.set_session_id(session_id);
+    string serialisedAck = ack.SerializeAsString();
+    sendBytes(player_socket, serialisedAck);
+
     // Wait for all players to join
-    while (true) {
-        send_(player_socket, "Type \"start\" and hit [ENTER] when all your session members have joined!\n");
-        std::optional<string> startOpt = _readCatch(player_socket);
-        if (!startOpt.has_value()) {
-            BOOST_LOG_TRIVIAL(info) << "Leader of session " << session_id << " disconnected!";
+    // while (true) {
+    //     send_(player_socket, "Type \"start\" and hit [ENTER] when all your session members have joined!\n");
+    //     std::optional<string> startOpt = _readCatch(player_socket);
+    //     if (!startOpt.has_value()) {
+    //         BOOST_LOG_TRIVIAL(info) << "Leader of session " << session_id << " disconnected!";
 
-            session.invalidate();  // Invalidate the session
+    //         session.invalidate();  // Invalidate the session
 
-            lock.lock();  // Remove the session from the hashtable
-            sessions.erase(session_id);
-            lock.unlock();
-            return;
-        }
-        string start = startOpt.value();
-        if (start == "start") {
-            if (session.getNumPlayers() == 1) {
-                send_(player_socket, "You are the only player in the session. Please wait for others to join.\n");
-            } else {
-                break;
-            }
-        }
-    }
+    //         lock.lock();  // Remove the session from the hashtable
+    //         sessions.erase(session_id);
+    //         lock.unlock();
+    //         return;
+    //     }
+    //     string start = startOpt.value();
+    //     if (start == "start") {
+    //         if (session.getNumPlayers() == 1) {
+    //             send_(player_socket, "You are the only player in the session. Please wait for others to join.\n");
+    //         } else {
+    //             break;
+    //         }
+    //     }
+    // }
 
-    // Construct the game object
-    send_(player_socket, "Starting the game...\n");
-    std::unique_ptr<Game> gptr{new Game(std::move(session))};  // allocate on heap to avoid stack overflow
+    // // Construct the game object
+    // send_(player_socket, "Starting the game...\n");
+    // std::unique_ptr<Game> gptr{new Game(std::move(session))};  // allocate on heap to avoid stack overflow
 
-    // Remove the session from the hashtable
-    lock.lock();
-    sessions.erase(session_id);
-    lock.unlock();
+    // // Remove the session from the hashtable
+    // lock.lock();
+    // sessions.erase(session_id);
+    // lock.unlock();
 
-    // Start the game
-    gptr->start();
+    // // Start the game
+    // gptr->start();
     return;
 }
 
-void join_session(Player joiner) {
-    BOOST_LOG_TRIVIAL(info) << joiner << " selecting session to join...";
+void join_session(Player joiner, int sessionId) {
+    // TODO in the afternoon
+    BOOST_LOG_TRIVIAL(debug) << joiner << " trying to join session " << sessionId;
     std::unique_lock<std::mutex> lock(sessions_mutex);
+    lock.lock();
+    JoinSessionAck ack;
+    if (sessions.find(sessionId) == sessions.end()) {
+        ack.set_status(AckStatus::ACK_FAILED);
+        ack.set_message("Session does not exist!");
+        string serialisedAck = ack.SerializeAsString();
+        lock.unlock();
+        sendBytes(joiner.socket, serialisedAck);
+        return;
+    }
+    if (sessions[sessionId].getNumPlayers() >= Session::maxPlayers) {
+        ack.set_status(AckStatus::ACK_FAILED);
+        ack.set_message("Session is full!");
+        string serialisedAck = ack.SerializeAsString();
+        lock.unlock();
+        sendBytes(joiner.socket, serialisedAck);
+        return;
+    }
+    bool success = sessions[sessionId].join(joiner);
     lock.unlock();
+    if (!success) {
+        ack.set_status(AckStatus::ACK_FAILED);
+        ack.set_message("Failed to join session! (Unknown error)");
+        string serialisedAck = ack.SerializeAsString();
+        sendBytes(joiner.socket, serialisedAck);
+        return;
+    }
+    ack.set_status(AckStatus::ACK_SUCCEED);
+    ack.set_message("Successfully joined session!");
+    ack.set_session_id(sessionId);
+    string serialisedAck = ack.SerializeAsString();
+    sendBytes(joiner.socket, serialisedAck);
+    lock.unlock();
+    // no more control over joiner
+}
 
-    while (true) {
-        send_(joiner.socket, "Enter the ID of the session you want to join");
-        int sessionId;
-        try {
-            sessionId = requestInt(0, INT_MAX, "Invalid Session ID!\n", joiner);
-        } catch (std::exception& e) {
-            BOOST_LOG_TRIVIAL(info) << joiner << " disconnected!";
+void join_random_session(Player joiner) {
+    // TODO: Make this actually random rather than just joining the "first" session
+    BOOST_LOG_TRIVIAL(info) << joiner << " joining random session...";
+    std::unique_lock<std::mutex> lock(sessions_mutex);
+    for (auto& [session_id, session] : sessions) {
+        if (session.join(joiner)) { // join the first available session
+            lock.unlock();
+
+            // Send the session id to the joiner
+            JoinRandomSessionAck ack;
+            ack.set_session_type(JoinRandomSessionType::JOIN_RANDOM_SESSION_EXISTING_SESSION);
+            ack.set_message("Joined Existing Session!");
+            ack.set_session_id(session_id);
+            string serialisedAck = ack.SerializeAsString();
+            sendBytes(joiner.socket, serialisedAck);
+            
             return;
         }
-
-        BOOST_LOG_TRIVIAL(debug) << joiner << " trying to join session " << sessionId;
-        lock.lock();
-        if (sessions.find(sessionId) != sessions.end() && sessions[sessionId].join(joiner)) {
-            lock.unlock();
-            break;
-        } else {
-            send_(joiner.socket, "Unable to join the session specified...\n");
-        }
-        lock.unlock();
     }
+    lock.unlock();
+
+    // If no session is found, create a new session
+    BOOST_LOG_TRIVIAL(info) << "No available sessions found! Creating a new session...";
+    JoinRandomSessionAck ack;
+    ack.set_session_type(JoinRandomSessionType::JOIN_RANDOM_SESSION_NEW_SESSION);
+    ack.set_message("No available sessions found! Creating a new session...");
+    string serialisedAck = ack.SerializeAsString();
+    sendBytes(joiner.socket, serialisedAck);
+    create_session(std::move(joiner));
     return;
-    // no more control over joiner
 }
 
 void handle_client(tcp::socket socket) {
     // Greet Client
-    Ack ack;
+    AckMessage ack;
     ack.set_status(AckStatus::ACK_SUCCEED);
     ack.set_message("Welcome to the server!");
     std::string serialisedAck = ack.SerializeAsString();
@@ -121,40 +176,18 @@ void handle_client(tcp::socket socket) {
         return;
     }
 
+    BOOST_LOG_TRIVIAL(debug) << "New Connection:\n"
+                             << newConnection.DebugString();
     string name{newConnection.name()};
     ClientOperation operation{newConnection.operation()};
-
-    BOOST_LOG_TRIVIAL(debug) << "New Connection:\n" << newConnection.DebugString();
-    // Player player{name, std::move(socket)};
-
-    // // Show Menu of Options
-    // static const string menu = "0. Create New Session\n1. Join Existing Session\n2. Quit\n";
-    // send_(player.socket, menu);
-
-    // // Handle Client Input
-    // while (true) {
-    //     std::optional<string> choice_opt{_readCatch(player.socket)};
-    //     if (!choice_opt.has_value()) {
-    //         BOOST_LOG_TRIVIAL(info) << "Client disconnected!";
-    //         return;
-    //     }
-    //     string choice{choice_opt.value()};
-
-    //     if (choice == "0") {
-    //         create_session(std::move(player));
-    //         break;
-    //     } else if (choice == "1") {
-    //         join_session(std::move(player));
-    //         break;
-    //     } else if (choice == "2") {
-    //         send_(player.socket, "Goodbye!\n");
-    //         BOOST_LOG_TRIVIAL(info) << "Client " + name + " disconnected!";
-    //         break;
-    //     } else {
-    //         send_(player.socket, "Invalid Choice!\n");
-    //     }
-    // }
-
+    Player player{name, std::move(socket)};
+    if (operation == ClientOperation::OP_CREATE_SESSION) {
+        create_session(std::move(player));
+    } else if (operation == ClientOperation::OP_JOIN_SPECIFIC_SESSION) {
+        join_session(std::move(player), newConnection.session_id());
+    } else {
+        join_random_session(std::move(player));
+    }
     return;
 }
 

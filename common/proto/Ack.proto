@@ -1,12 +1,13 @@
 syntax = "proto3";
 
+package Ack;
 enum AckStatus {
     ACK_UNSPECIFIED = 0;
     ACK_SUCCEED = 1;
     ACK_FAILED = 2;
 }
 
-message Ack {
+message AckMessage {
     optional AckStatus status = 1;
     optional string message = 2;
 }

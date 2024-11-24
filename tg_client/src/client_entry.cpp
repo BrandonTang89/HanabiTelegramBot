@@ -1,13 +1,17 @@
 #include "client_entry.h"
 
-#include "ack.pb.h"
-#include "newConnect.pb.h"
+#include "Ack.pb.h"
+#include "CreateSessionAck.pb.h"
+#include "JoinRandomSessionAck.pb.h"
+#include "JoinSessionAck.pb.h"
+#include "NewConnect.pb.h"
 #include "pch.h"
 #include "sockets.h"
 #include "telegram_client_coroutine.hpp"
 #include "telegram_client_pch.h"
 #include "telegram_keyboard.h"
 using namespace boost::asio;
+using namespace Ack;
 
 Task<> welcomeTask(ChatIdType chatId, TgBot::Bot& bot) {
     std::string welcomeMessage = "Welcome to Hanabi!\n Enter /quit anytime to exit. \n Please enter your name:";
@@ -25,16 +29,47 @@ Task<std::string> getNameTask(ChatIdType chatId, TgBot::Bot& bot, MessageQueue<T
     co_return std::string(message->text);
 }
 
+Task<ClientOperation> getOperationTask(ChatIdType chatId, TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue) {
+    std::vector<std::string> operationStrings = {"/createSession", "/joinSession", "/joinRandomSession"};
+    TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
+    createOneColumnKeyboard(operationStrings, operationKeyboard);
+    bot.getApi().sendMessage(chatId, "Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
+    TgMsg message = co_await msgQueue;
+    while (true) {
+        if (message->text == "/createSession") {
+            co_return ClientOperation::OP_CREATE_SESSION;
+        } else if (message->text == "/joinSession") {
+            co_return ClientOperation::OP_JOIN_SPECIFIC_SESSION;
+        } else if (message->text == "/joinRandomSession") {
+            co_return ClientOperation::OP_JOIN_RANDOM_SESSION;
+        } else {
+            bot.getApi().sendMessage(chatId, "Invalid operation! Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
+            message = co_await msgQueue;
+        }
+    }
+}
+
+Task<int> getSpecificSessionTask(ChatIdType chatId, TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue) {
+    bot.getApi().sendMessage(chatId, "Please enter the session ID:");
+    TgMsg message = co_await msgQueue;
+    while (message->text.empty() || !std::all_of(message->text.begin(), message->text.end(), ::isdigit)) {
+        bot.getApi().sendMessage(chatId, "Session ID should be a number! Please enter the session ID:");
+        message = co_await msgQueue;
+    }
+    co_return std::stoi(message->text);
+}
+
 Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot) {
     // Connects to the server as a new client
     // Create a socket connected to the server at localhost:1234
+    // Move down eventually when the project matures (now here for debug)
     io_service io_service;
     ip::tcp::socket socket(io_service);
     socket.connect(ip::tcp::endpoint(ip::address::from_string("127.0.0.1"), 1234));
     BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " connected to server";
 
     // Read welcome acknowledgement from server
-    Ack ack;
+    AckMessage ack;
     std::string serialisedAck = readBytes(socket);
     ack.ParseFromString(serialisedAck);
     if (ack.status() != AckStatus::ACK_SUCCEED) {
@@ -42,66 +77,82 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
         co_return;
     }
 
-    // Remove the starting message from the queue
-    TgMsg dummy = co_await msgQueue;
+    co_await msgQueue;                  // remove the starting message if any
+    co_await welcomeTask(chatId, bot);  // Display welcome message to user
 
-    // Display welcome message to user
-    co_await welcomeTask(chatId, bot);  // add the coroutine to the stack to allow message passing
-
+    // Get Name
     std::string name = co_await getNameTask(chatId, bot, msgQueue);
     bot.getApi().sendMessage(chatId, "Your name is: " + name);
 
-    // Wait for user to select to enter name
-    // if (cmd == "/quit") {
-    //     BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " quit!";
-    //     bot.getApi().sendMessage(chatId, "Goodbye!");
-    //     co_return;
-    // }
+    // Get Operation
+    ClientOperation operation = co_await getOperationTask(chatId, bot, msgQueue);
+    std::optional<int> sessionId;
+    if (operation == ClientOperation::OP_JOIN_SPECIFIC_SESSION) {
+        sessionId = co_await getSpecificSessionTask(chatId, bot, msgQueue);
+    }
 
-    // === Get the Name ===
-    // std::string name = co_await AwaiterForMessage<std::string>(messageQueue);
-    // while (name.empty() || name[0] == '/') {
-    //     bot.getApi().sendMessage(chatId, "Name cannot be empty or begin with a /\n Please enter your name:");
-    //     name = co_await AwaiterForMessage<std::string>(messageQueue);
-    // }
-    // BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received name: " << name;
+    BOOST_LOG_TRIVIAL(info) << "Name: " << name << " Operation: " << operation << " Session ID: " << sessionId.value_or(-1);
 
-    // // === Get the Operation ===
-    // std::vector<std::string> operationStrings = {"/createSession", "/joinSession", "/joinRandomSession"};
-    // TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
-    // createOneColumnKeyboard(operationStrings, operationKeyboard);
-    // bot.getApi().sendMessage(chatId, "Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
-    // std::string operation = co_await AwaiterForMessage<std::string>(messageQueue);
-    // while (operation.empty() || find(operationStrings.begin(), operationStrings.end(), operation) == operationStrings.end()) {
-    //     bot.getApi().sendMessage(chatId, "Invalid operation! Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
-    //     operation = co_await AwaitableMessage<std::string>(messageQueue);
-    // }
-    // BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received operation: " << operation;
+    // Create a NewConnection message
+    NewConnection newConnection;
+    newConnection.set_name(name);
+    newConnection.set_operation(operation);
+    if (sessionId.has_value()) {
+        newConnection.set_session_id(sessionId.value());
+    }
 
-    // // === Get the Session ID ===
-    // std::optional<int> sessionId;
-    // if (operation == "/joinSession") {
-    //     bot.getApi().sendMessage(chatId, "Please enter the session ID:");
-    //     std::string sessionIdStr = co_await AwaitableMessage<std::string>(messageQueue);
-    //     while (sessionIdStr.empty() || !std::all_of(sessionIdStr.begin(), sessionIdStr.end(), ::isdigit)) {
-    //         bot.getApi().sendMessage(chatId, "Session ID should be a number! Please enter the session ID:");
-    //         sessionIdStr = co_await AwaitableMessage<std::string>(messageQueue);
-    //     }
-    //     sessionId = std::stoi(sessionIdStr);
-    //     BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received session ID: " << sessionId.value();
-    // }
+    // Send the NewConnection message to the server
+    std::string serialisedNewConnection = newConnection.SerializeAsString();
+    sendBytes(socket, serialisedNewConnection);
+    bot.getApi().sendMessage(chatId, "Connecting to the server...");
 
-    // BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " sending NewConnection message to server";
-    // NewConnection newConnection;
-    // newConnection.set_name(name);
-    // newConnection.set_operation(ClientOperation::OP_CREATE_SESSION);
-    // newConnection.set_session_id(0);
+    // Read the acknowledgement from the server
+    bool isLeader = (operation == ClientOperation::OP_CREATE_SESSION);
+    if (operation == ClientOperation::OP_JOIN_RANDOM_SESSION) {
+        JoinRandomSessionAck joinRandomSessionAck;
+        std::string serialisedJoinRandomSessionAck = readBytes(socket);
+        joinRandomSessionAck.ParseFromString(serialisedJoinRandomSessionAck);
+        bot.getApi().sendMessage(chatId, joinRandomSessionAck.message());
 
-    // // Send the NewConnection message to the server
-    // std::string serialized = newConnection.SerializeAsString();
-    // sendBytes(socket, serialized);
+        if (joinRandomSessionAck.session_type() == JOIN_RANDOM_SESSION_NEW_SESSION) {
+            isLeader = true;
+        } else {
+            isLeader = false;
+            sessionId = joinRandomSessionAck.session_id();
+        }
+    }
 
-    // printf("Sent NewConnection message to server\n");
+    if (operation == ClientOperation::OP_JOIN_SPECIFIC_SESSION) {
+        JoinSessionAck joinSessionAck;
+        std::string serialisedJoinSessionAck = readBytes(socket);
+        joinSessionAck.ParseFromString(serialisedJoinSessionAck);
+        bot.getApi().sendMessage(chatId, joinSessionAck.message());
+
+        if (joinSessionAck.status() == AckStatus::ACK_SUCCEED) {
+            sessionId = joinSessionAck.session_id();
+        } else {
+            co_return;
+        }
+    }
+
+    if (isLeader) {
+        CreateSessionAck createSessionAck;
+        BOOST_LOG_TRIVIAL(info) << "Waiting for server response...";
+        std::string serialisedCreateSessionAck = readBytes(socket);
+        createSessionAck.ParseFromString(serialisedCreateSessionAck);
+        bot.getApi().sendMessage(chatId, createSessionAck.message());
+
+        if (createSessionAck.status() == AckStatus::ACK_SUCCEED) {
+            sessionId = createSessionAck.session_id();
+            bot.getApi().sendMessage(chatId, "You are the session leader.");
+        } else {
+            BOOST_LOG_TRIVIAL(error) << "Failed to create session!";
+            co_return;
+        }
+    }
+
+    bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
+
     while (true) {
         // TgBot::Message::Ptr message = co_await AwaitableMessage<TgBot::Message::Ptr>(messageQueue);
         TgMsg text = co_await msgQueue;

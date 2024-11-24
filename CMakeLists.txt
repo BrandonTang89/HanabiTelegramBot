@@ -35,8 +35,11 @@ include_directories(${CMAKE_CURRENT_BINARY_DIR})
 include_directories(${CMAKE_CURRENT_BINARY_DIR}/proto) # Include the proto output directory
 include_directories(hanabi_game/inc common/inc tg_client/inc)
 set(PROTO_FILES
-    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/newConnect.proto
-    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/ack.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/NewConnect.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/Ack.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/JoinSessionAck.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/CreateSessionAck.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/JoinRandomSessionAck.proto
 )
 set(PROTO_OUT ${CMAKE_CURRENT_BINARY_DIR}/proto)
 file(MAKE_DIRECTORY ${PROTO_OUT})

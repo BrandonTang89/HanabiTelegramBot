@@ -27,7 +27,14 @@ We spawn a new thread for each new client to allow the main thread to continue w
 ## The Telegram Client
 The telegram client process acts as a middleman between individual telegram chats and the game server. Compared with the approach of spawning a new thread to handle each game in the server, I opted to use a single thread that operated several chat sessions and uses coroutines to manage the state of each chat session. This is more lightweight compared to spawning multiple threads since the work done for each chat session is quite minimal anyway. It is a future goal to utilise multithreading via a worker pool to scale this if necessary.
 
-Each chat session will occasionally await on messages from the player. These messages will be first processed by the main thread and then sorted into message queues for individual chat sessions. We can technically get away with using slots rather than queues initially, but in a multithreaded setting the queues would be better. 
+## User Flow
+1. The user will send any message to initiate the bot.
+2. The bot will prompt the user for his/her name
+3. The bot will prompt the user to do 1 of 3 actions   
+    - Create a new game
+    - Join an existing game
+    - Join a random game (create a new game if no games are available)
+4. If the player is a leader, the bot will wait on the player to start the game. Otherwise, the player will wait for the leader to start the game.
 
 ## Project Structure
 - `./inc` - Contains all the header (`.h`) files.
