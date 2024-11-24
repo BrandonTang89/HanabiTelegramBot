@@ -1,5 +1,4 @@
-#ifndef LOADENV_H
-#define LOADENV_H
+#pragma once
 #include <filesystem>
 #include <fstream>
 #include "pch.h"
@@ -26,5 +25,3 @@ inline void loadEnv() {
     }
     envFile.close();
 }
-
-#endif // LOADENV_H

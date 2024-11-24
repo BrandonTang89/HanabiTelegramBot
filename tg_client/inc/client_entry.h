@@ -1,6 +1,4 @@
-#ifndef CLIENT_ENTRY_H
-#define CLIENT_ENTRY_H
-
+#pragma once
 #include <queue>
 #include <stack>
 #include <string>
@@ -8,7 +6,4 @@
 #include "telegram_client_pch.h"
 #include <tgbot/tgbot.h>
 
-Task clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot);
-
-
-#endif // CLIENT_ENTRY_H
+Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot);

@@ -2,13 +2,11 @@
 #include "loadenv.h"
 #include "telegram_client_coroutine.hpp"
 #include "telegram_client_pch.h"
-#include <iostream>
-#include <memory>
 
-#include <stack>
 class ChatSessions {
+    private:
     TgBot::Bot& bot;
-    std::unordered_map<ChatIdType, Task> chatCoroutines;
+    std::unordered_map<ChatIdType, Task<>> chatCoroutines;
     std::unordered_map<ChatIdType, MessageQueue<TgMsg>> chatMessageQueues;
 
    public:
@@ -25,11 +23,16 @@ class ChatSessions {
         // new clients are handled via clientEntry coroutine
         chatMessageQueues.insert_or_assign(chatId, MessageQueue<TgMsg>());
         chatCoroutines.insert_or_assign(chatId, clientEntry(chatId, chatMessageQueues.at(chatId), bot));
-        chatCoroutines.at(chatId).handle_.resume();
+        chatCoroutines.at(chatId).handle_.resume(); // start the coroutine
     }
 
     void passMessage(ChatIdType chatId, TgMsg message) {
         chatMessageQueues.at(chatId).pushMessage(message);
+    }
+
+    void deleteSession(ChatIdType chatId) {
+        chatCoroutines.erase(chatId);
+        chatMessageQueues.erase(chatId);
     }
 };
 
@@ -42,6 +45,13 @@ int main() {
         if (!chatSessions.hasSession(message->chat->id)) {
             BOOST_LOG_TRIVIAL(info) << "Creating new chat session for chat " << message->chat->id;
             chatSessions.createNewSession(message->chat->id);
+        }
+
+        if (message->text == "/quit") {
+            BOOST_LOG_TRIVIAL(info) << "Client of id " << message->chat->id << " quit!";
+            bot.getApi().sendMessage(message->chat->id, "Goodbye!");
+            chatSessions.deleteSession(message->chat->id);
+            return;
         }
 
         // BOOST_LOG_TRIVIAL(trace) << "Passing message to chat session for chat " << message->chat->id;

@@ -1,7 +1,5 @@
 #include "client_entry.h"
 
-#include <stack>
-
 #include "ack.pb.h"
 #include "newConnect.pb.h"
 #include "pch.h"
@@ -11,16 +9,23 @@
 #include "telegram_keyboard.h"
 using namespace boost::asio;
 
-#include <iostream>
-
-Task welcomeTask(ChatIdType chatId, TgBot::Bot& bot) {
+Task<> welcomeTask(ChatIdType chatId, TgBot::Bot& bot) {
     std::string welcomeMessage = "Welcome to Hanabi!\n Enter /quit anytime to exit. \n Please enter your name:";
     bot.getApi().sendMessage(chatId, welcomeMessage);
     BOOST_LOG_TRIVIAL(debug) << "Sent welcome message to chat " << chatId;
     co_return;
 }
 
-Task clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot) {
+Task<std::string> getNameTask(ChatIdType chatId, TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue) {
+    TgMsg message = co_await msgQueue;
+    while (message->text.empty() || message->text[0] == '/') {
+        bot.getApi().sendMessage(chatId, "Name cannot be empty or begin with a /\n Please enter your name:");
+        message = co_await msgQueue;
+    }
+    co_return std::string(message->text);
+}
+
+Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot) {
     // Connects to the server as a new client
     // Create a socket connected to the server at localhost:1234
     io_service io_service;
@@ -42,6 +47,9 @@ Task clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& b
 
     // Display welcome message to user
     co_await welcomeTask(chatId, bot);  // add the coroutine to the stack to allow message passing
+
+    std::string name = co_await getNameTask(chatId, bot, msgQueue);
+    bot.getApi().sendMessage(chatId, "Your name is: " + name);
 
     // Wait for user to select to enter name
     // if (cmd == "/quit") {

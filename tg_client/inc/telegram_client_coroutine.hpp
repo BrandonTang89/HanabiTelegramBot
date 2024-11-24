@@ -1,12 +1,10 @@
-#ifndef TELEGRAM_CLIENT_COROUTINE_HPP
-#define TELEGRAM_CLIENT_COROUTINE_HPP
+#pragma once
 #include <coroutine>
-#include <iostream>
 #include <queue>
-
 #include "pch.h"
 
-// Lazily Started Task
+// Lazily started coroutine returning a Result
+template <typename Result = void>
 class [[nodiscard]] Task {
    public:
     struct FinalAwaiter {  // awaiter that is called when the final suspend point is reached
@@ -19,18 +17,19 @@ class [[nodiscard]] Task {
     };
 
     struct Promise {
-        std::coroutine_handle<> continuation = nullptr;
+        std::coroutine_handle<> continuation{nullptr};
+        Result result;
         Task get_return_object() {
             return Task{std::coroutine_handle<Promise>::from_promise(*this)};
         }
 
         void unhandled_exception() noexcept {}
-        void return_void() noexcept {}
+        void return_value(Result&& res) noexcept { result = std::move(res); }
         std::suspend_always initial_suspend() noexcept { return {}; }  // suspend immediately, the caller should put the coroutine on the stack to allow message passing
         FinalAwaiter final_suspend() noexcept { return {}; }
     };
     using promise_type = Promise;
-    std::coroutine_handle<Promise> handle_ = nullptr;
+    std::coroutine_handle<Promise> handle_{nullptr};
 
     struct Awaiter {  // used when we call co_await on a task
                       // The way we use this, since our task doesn't do co_yield, this should only run once
@@ -40,7 +39,16 @@ class [[nodiscard]] Task {
             handle.promise().continuation = calling;  // store the caller's coroutine handle in the promise
             return handle;                            // symmetric transfer to start the calee coroutine
         }
-        void await_resume() const noexcept {}
+
+        template <typename T = Result>
+            requires std::is_same_v<T, void>
+        void await_resume() noexcept {}
+
+        template <typename T = Result>
+            requires(!std::is_same_v<T, void>)
+        T await_resume() noexcept {
+            return std::move(handle.promise().result);
+        }
     };
 
     // Task is awaitable since it has a co_await operator that returns an awaiter
@@ -76,6 +84,21 @@ class [[nodiscard]] Task {
     explicit Task(std::coroutine_handle<Promise> handle)
         : handle_(handle) {
     }
+};
+
+template <>
+struct Task<void>::Promise {
+    std::coroutine_handle<> continuation{nullptr};
+
+    Task get_return_object() {
+        return Task{std::coroutine_handle<Promise>::from_promise(*this)};
+    }
+
+    void unhandled_exception() noexcept {}
+    void return_void() noexcept {}
+
+    std::suspend_always initial_suspend() noexcept { return {}; }
+    FinalAwaiter final_suspend() noexcept { return {}; }
 };
 
 template <typename T>
@@ -118,5 +141,3 @@ class MessageQueue {
         }
     }
 };
-
-#endif
