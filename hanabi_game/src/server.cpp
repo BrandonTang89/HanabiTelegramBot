@@ -86,7 +86,6 @@ void join_session(Player joiner, int sessionId) {
     // TODO in the afternoon
     BOOST_LOG_TRIVIAL(debug) << joiner << " trying to join session " << sessionId;
     std::unique_lock<std::mutex> lock(sessions_mutex);
-    lock.lock();
     JoinSessionAck ack;
     if (sessions.find(sessionId) == sessions.end()) {
         ack.set_status(AckStatus::ACK_FAILED);

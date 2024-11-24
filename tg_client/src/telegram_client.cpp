@@ -6,7 +6,7 @@
 class ChatSessions {
     private:
     TgBot::Bot& bot;
-    std::unordered_map<ChatIdType, Task<>> chatCoroutines;
+    std::unordered_map<ChatIdType, Task<void>> chatCoroutines;
     std::unordered_map<ChatIdType, MessageQueue<TgMsg>> chatMessageQueues;
 
    public:

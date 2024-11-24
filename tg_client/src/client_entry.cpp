@@ -63,6 +63,7 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
     // Connects to the server as a new client
     // Create a socket connected to the server at localhost:1234
     // Move down eventually when the project matures (now here for debug)
+
     io_service io_service;
     ip::tcp::socket socket(io_service);
     socket.connect(ip::tcp::endpoint(ip::address::from_string("127.0.0.1"), 1234));
@@ -131,6 +132,7 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
         if (joinSessionAck.status() == AckStatus::ACK_SUCCEED) {
             sessionId = joinSessionAck.session_id();
         } else {
+            BOOST_LOG_TRIVIAL(info) << "User failed to join session!";
             co_return;
         }
     }

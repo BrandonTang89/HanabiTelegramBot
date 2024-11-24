@@ -1,6 +1,7 @@
 #pragma once
 #include <coroutine>
 #include <queue>
+
 #include "pch.h"
 
 // Lazily started coroutine returning a Result
@@ -10,8 +11,11 @@ class [[nodiscard]] Task {
     struct FinalAwaiter {  // awaiter that is called when the final suspend point is reached
         bool await_ready() const noexcept { return false; }
         template <typename P>
-        auto await_suspend(std::coroutine_handle<P> handle) noexcept {
-            return handle.promise().continuation;  // symmetric transfer to resume the caller's coroutine
+        void await_suspend(std::coroutine_handle<P> handle) noexcept {
+            if (handle.promise().continuation) {
+                handle.promise().continuation.resume();  // resume the caller's coroutine
+            }
+            // don't resume if not finishing on a co_await
         }
         void await_resume() const noexcept {}
     };
