@@ -22,7 +22,7 @@ class Session {
     Session& operator=(Session&& source) = delete;
     Session& operator=(const Session&) = delete;
 
-    bool join(Player& player);  // returns true if and only if the join succeed
+    std::optional<std::reference_wrapper<Player>> join(Player& player);  // returns true if and only if the join succeed
     Player& getLeader();
     int getNumPlayers() const;
     void broadcast(const std::string& message);

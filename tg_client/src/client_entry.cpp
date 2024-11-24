@@ -5,6 +5,7 @@
 #include "JoinRandomSessionAck.pb.h"
 #include "JoinSessionAck.pb.h"
 #include "NewConnect.pb.h"
+#include "StartGame.pb.h"
 #include "pch.h"
 #include "sockets.h"
 #include "telegram_client_coroutine.hpp"
@@ -57,6 +58,16 @@ Task<int> getSpecificSessionTask(ChatIdType chatId, TgBot::Bot& bot, MessageQueu
         message = co_await msgQueue;
     }
     co_return std::stoi(message->text);
+}
+
+Task<> waitUntilStartCommand(ChatIdType chatId, TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue) {
+    bot.getApi().sendMessage(chatId, "Please enter /start to start the game!");
+    TgMsg message = co_await msgQueue;
+    while (message->text != "/start") {
+        bot.getApi().sendMessage(chatId, "Please enter /start to start the game!");
+        message = co_await msgQueue;
+    }
+    co_return;
 }
 
 Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot) {
@@ -120,6 +131,7 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
         } else {
             isLeader = false;
             sessionId = joinRandomSessionAck.session_id();
+            bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
         }
     }
 
@@ -135,6 +147,7 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
             BOOST_LOG_TRIVIAL(info) << "User failed to join session!";
             co_return;
         }
+        bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
     }
 
     if (isLeader) {
@@ -151,9 +164,29 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
             BOOST_LOG_TRIVIAL(error) << "Failed to create session!";
             co_return;
         }
-    }
 
-    bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
+        bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
+        // Wait until start then start
+
+        while (true) {
+            co_await waitUntilStartCommand(chatId, bot, msgQueue);
+            StartGameMsg startGameMsg;
+            sendBytes(socket, startGameMsg.SerializeAsString());
+            AckMessage startGameAck;
+            std::string serialisedStartGameAck = readBytes(socket);
+            startGameAck.ParseFromString(serialisedStartGameAck);
+
+            BOOST_LOG_TRIVIAL(info) << "Start Game Acknowledgement received!";
+            if (startGameAck.status() == AckStatus::ACK_SUCCEED) {
+                BOOST_LOG_TRIVIAL(info) << sessionId.value() << " has started..";
+                bot.getApi().sendMessage(chatId, "Game started!");
+                break;
+            } else {
+                bot.getApi().sendMessage(chatId, "Failed to start game!");
+                bot.getApi().sendMessage(chatId, startGameAck.message());
+            }
+        }
+    }
 
     while (true) {
         // TgBot::Message::Ptr message = co_await AwaitableMessage<TgBot::Message::Ptr>(messageQueue);

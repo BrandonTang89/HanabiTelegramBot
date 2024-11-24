@@ -1,7 +1,8 @@
+#include "session.h"
+
 #include <cassert>
 
 #include "pch.h"
-#include "session.h"
 #include "player.h"
 #include "sockets.h"
 
@@ -22,19 +23,19 @@ Session::Session(Session&& source) noexcept
 }
 
 // Join Method
-bool Session::join(Player& player) {
+std::optional<std::reference_wrapper<Player>> Session::join(Player& player) {
     std::lock_guard<std::mutex> guard(session_mutex);
     if (static_cast<int>(players.size()) == 0) {
         BOOST_LOG_TRIVIAL(fatal) << sessionId << " had no leader!";
-        return false;  // empty session
+        return std::nullopt;  // empty session
     }
     if (!is_socket_connected(players[0].socket)) {
         BOOST_LOG_TRIVIAL(info) << sessionId << " has disconnected leader";
-        return false;
+        return std::nullopt;
     }
     if (numPlayers >= maxPlayers) {
         BOOST_LOG_TRIVIAL(info) << sessionId << " has reached max number of players";
-        return false;
+        return std::nullopt;
     }
     players.emplace_back(std::move(player));
     numPlayers++;
@@ -55,7 +56,7 @@ bool Session::join(Player& player) {
     //     send_(players.back().socket, players[i].name + "\n");
     // }
 
-    return true;
+    return players.back();
 }
 
 void Session::broadcast(const string& message) {

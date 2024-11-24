@@ -2,7 +2,6 @@
 
 #include <string>
 #include "pch.h"
-#include "base64.hpp"
 using boost::asio::ip::tcp;
 using std::string;
 
@@ -35,6 +34,8 @@ std::optional<string> readBytesCatch(tcp::socket& socket) noexcept {
     }
 }
 
+// === Deprecated ===
+// Send strings delimited by \n
 void send_(tcp::socket& socket, const string& message) noexcept {
     try {
         const string msg = message;
@@ -46,9 +47,6 @@ void send_(tcp::socket& socket, const string& message) noexcept {
     }
 }
 
-
-// === Deprecated ===
-// Send strings delimited by \n
 string read_(tcp::socket& socket) {
     boost::asio::streambuf buf;
     boost::asio::read_until(socket, buf, "\n");
@@ -64,25 +62,6 @@ string read_(tcp::socket& socket) {
 std::optional<string> _readCatch(tcp::socket& socket) noexcept {
     try {
         return read_(socket);
-    } catch (const std::exception& e) {
-        BOOST_LOG_TRIVIAL(error) << "Error reading message: " << e.what();
-        return std::nullopt;
-    }
-}
-
-// Send bytes encoded as base64, delimited by \n
-void sendBase64(tcp::socket& socket, const string& message) {
-    string base64Message = base64::to_base64(message);
-    send_(socket, base64Message + '\n');
-}
-string readBase64(tcp::socket& socket) {
-    string base64Message = read_(socket);
-    return base64::from_base64(base64Message);
-}
-
-std::optional<string> readBase64Catch(tcp::socket& socket) noexcept {
-    try {
-        return readBase64(socket);
     } catch (const std::exception& e) {
         BOOST_LOG_TRIVIAL(error) << "Error reading message: " << e.what();
         return std::nullopt;
