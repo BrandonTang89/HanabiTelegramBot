@@ -1,15 +1,10 @@
 #include "client_entry.h"
 
-#include "Ack.pb.h"
-#include "CreateSessionAck.pb.h"
-#include "JoinRandomSessionAck.pb.h"
-#include "JoinSessionAck.pb.h"
-#include "NewConnect.pb.h"
-#include "StartGame.pb.h"
 #include "pch.h"
+#include "telegram_client_pch.h"
+#include "proto_files.h"
 #include "sockets.h"
 #include "telegram_client_coroutine.hpp"
-#include "telegram_client_pch.h"
 #include "telegram_keyboard.h"
 using namespace boost::asio;
 using namespace Ack;

@@ -1,5 +1,4 @@
-#ifndef CARD_H
-#define CARD_H
+#pragma once
 #include <string>
 
 using std::string;
@@ -21,5 +20,3 @@ public:
     friend std::ostream& operator<<(std::ostream& os, const Card& card);
 
 };
-
-#endif // CARD_H

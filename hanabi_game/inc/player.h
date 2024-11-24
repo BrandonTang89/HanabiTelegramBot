@@ -1,6 +1,4 @@
-#ifndef PLAYER_H
-#define PLAYER_H
-
+#pragma once
 #include "pch.h"
 
 using namespace boost::asio;
@@ -25,5 +23,3 @@ class Player {
     // Overloaded << for debug
     friend std::ostream& operator<<(std::ostream& os, const Player& player);
 };
-
-#endif  // PLAYER_H

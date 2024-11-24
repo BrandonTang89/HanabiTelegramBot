@@ -1,5 +1,4 @@
-#ifndef SESSION_H
-#define SESSION_H
+#pragma once
 
 #include <mutex>
 #include "pch.h"
@@ -32,5 +31,3 @@ class Session {
     // Representation for Debugging
     friend std::ostream& operator<<(std::ostream& os, const Session& sess);
 };
-
-#endif  // SESSION_H

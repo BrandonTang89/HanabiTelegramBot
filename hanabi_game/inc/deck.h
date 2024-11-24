@@ -1,5 +1,4 @@
-#ifndef DECK_H
-#define DECK_H
+#pragma once
 #include <vector>
 #include <random>
 struct Card; // Forward declaration
@@ -17,5 +16,3 @@ class Deck {  // a vector of cards, allows you to draw cards and shuffle the dec
 
     // Other member functions and variables
 };
-
-#endif  // DECK_H

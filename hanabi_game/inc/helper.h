@@ -1,6 +1,4 @@
-#ifndef HELPER_H
-#define HELPER_H
-
+#pragma once
 #include <stdexcept>
 
 #include "pch.h"
@@ -32,5 +30,3 @@ inline void broadcast(std::vector<Player>& players, const std::string& message) 
         send_(player.socket, message);
     }
 }
-
-#endif // HELPER_H

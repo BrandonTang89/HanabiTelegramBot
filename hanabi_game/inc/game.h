@@ -1,5 +1,4 @@
-#ifndef GAME_H
-#define GAME_H
+#pragma once
 #include <vector>
 #include <iostream>
 
@@ -8,7 +7,6 @@
 #include "deck.h"
 #include "card.h"
 
-// Your code goes here
 class Game {
    private:
     std::vector<Player> players;
@@ -42,5 +40,3 @@ class Game {
 
     friend std::ostream& operator<<(std::ostream& os, const Game& game);
 };
-
-#endif  // GAME_H

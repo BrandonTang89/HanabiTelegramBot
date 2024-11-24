@@ -1,17 +1,11 @@
 #include <iostream>
 #include <mutex>
-#include <optional>
 #include <thread>
 
-#include "Ack.pb.h"
-#include "CreateSessionAck.pb.h"
-#include "JoinRandomSessionAck.pb.h"
-#include "JoinSessionAck.pb.h"
-#include "NewConnect.pb.h"
-#include "StartGame.pb.h"
+#include "pch.h"
+#include "proto_files.h"
 #include "game.h"
 #include "helper.h"
-#include "pch.h"
 #include "player.h"
 #include "session.h"
 #include "sockets.h"

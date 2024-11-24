@@ -1,6 +1,4 @@
-#ifndef SOCKETSH
-#define SOCKETSH
-
+#pragma once
 #include "pch.h"
 
 using boost::asio::ip::tcp;
@@ -15,5 +13,3 @@ string read_(tcp::socket& socket);
 std::optional<string> _readCatch(tcp::socket& socket) noexcept;
 
 bool is_socket_connected(tcp::socket& socket);
-
-#endif // SOCKETSH
