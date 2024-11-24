@@ -5,9 +5,9 @@
 #include "ack.pb.h"
 #include "newConnect.pb.h"
 #include "pch.h"
-#include "telegram_client_pch.h"
 #include "sockets.h"
 #include "telegram_client_coroutine.hpp"
+#include "telegram_client_pch.h"
 #include "telegram_keyboard.h"
 using namespace boost::asio;
 
@@ -20,9 +20,7 @@ Task welcomeTask(ChatIdType chatId, TgBot::Bot& bot) {
     co_return;
 }
 
-
-
-Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<Task>& coroutineStack, TgBot::Bot& bot) {
+Task clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot) {
     // Connects to the server as a new client
     // Create a socket connected to the server at localhost:1234
     io_service io_service;
@@ -40,12 +38,10 @@ Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<
     }
 
     // Remove the starting message from the queue
-    TgMsg dummy = co_await AwaitableMessage<TgMsg>(messageQueue);
+    TgMsg dummy = co_await msgQueue;
 
     // Display welcome message to user
-    coroutineStack.emplace(welcomeTask(chatId, bot));  // add the coroutine to the stack to allow message passing
-    co_await coroutineStack.top();              // start the coroutine and wait for the coroutine to finish
-    coroutineStack.pop();                       // remove the coroutine from the stack
+    co_await welcomeTask(chatId, bot);  // add the coroutine to the stack to allow message passing
 
     // Wait for user to select to enter name
     // if (cmd == "/quit") {
@@ -55,10 +51,10 @@ Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<
     // }
 
     // === Get the Name ===
-    // std::string name = co_await AwaitableMessage<std::string>(messageQueue);
+    // std::string name = co_await AwaiterForMessage<std::string>(messageQueue);
     // while (name.empty() || name[0] == '/') {
     //     bot.getApi().sendMessage(chatId, "Name cannot be empty or begin with a /\n Please enter your name:");
-    //     name = co_await AwaitableMessage<std::string>(messageQueue);
+    //     name = co_await AwaiterForMessage<std::string>(messageQueue);
     // }
     // BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " received name: " << name;
 
@@ -67,7 +63,7 @@ Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<
     // TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
     // createOneColumnKeyboard(operationStrings, operationKeyboard);
     // bot.getApi().sendMessage(chatId, "Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
-    // std::string operation = co_await AwaitableMessage<std::string>(messageQueue);
+    // std::string operation = co_await AwaiterForMessage<std::string>(messageQueue);
     // while (operation.empty() || find(operationStrings.begin(), operationStrings.end(), operation) == operationStrings.end()) {
     //     bot.getApi().sendMessage(chatId, "Invalid operation! Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
     //     operation = co_await AwaitableMessage<std::string>(messageQueue);
@@ -100,8 +96,8 @@ Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<
     // printf("Sent NewConnection message to server\n");
     while (true) {
         // TgBot::Message::Ptr message = co_await AwaitableMessage<TgBot::Message::Ptr>(messageQueue);
-        TgMsg text = co_await AwaitableMessage<TgMsg>(messageQueue);
+        TgMsg text = co_await msgQueue;
         bot.getApi().sendMessage(chatId, "Your message is: " + text->text);
     }
     co_return;
-}(TgBot::Message::Ptr)
+}

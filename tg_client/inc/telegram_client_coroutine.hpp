@@ -6,6 +6,7 @@
 
 #include "pch.h"
 
+// Lazily Started Task
 class [[nodiscard]] Task {
    public:
     struct FinalAwaiter {  // awaiter that is called when the final suspend point is reached
@@ -50,9 +51,18 @@ class [[nodiscard]] Task {
         return Awaiter{handle_};
     }
 
+    // Tasks are not copyable, only movable
     Task(const Task&) = delete;
+    Task&(operator=(const Task&)) = delete;
     Task(Task&& other) noexcept : handle_(other.handle_) {
         other.handle_ = nullptr;
+    }
+    Task& operator=(Task&& other) noexcept {
+        if (this != &other) {
+            handle_ = other.handle_;
+            other.handle_ = nullptr;
+        }
+        return *this;
     }
 
     ~Task() {  // destroy the coroutine when the task is destroyed
@@ -69,24 +79,44 @@ class [[nodiscard]] Task {
 };
 
 template <typename T>
-class AwaitableMessage {
+class MessageQueue {
    public:
-    AwaitableMessage(std::queue<T>& queue) : queue_(queue) {}
+    class AwaiterForMessage {
+       public:
+        AwaiterForMessage(MessageQueue<T>& msgQueue) : msgQueue_{msgQueue} {}
 
-    bool await_ready() const noexcept {
-        return !queue_.empty();
+        bool await_ready() const noexcept {
+            return !msgQueue_.queue_.empty();
+        }
+
+        void await_suspend(std::coroutine_handle<> handle) {
+            msgQueue_.m_awaiter = handle;
+        }
+
+        T await_resume() {
+            T value = std::move(msgQueue_.queue_.front());
+            msgQueue_.queue_.pop();
+            return value;
+        }
+
+       private:
+        MessageQueue<T>& msgQueue_;
+    };
+
+    auto operator co_await() noexcept {
+        return AwaiterForMessage(*this);
     }
 
-    void await_suspend(std::coroutine_handle<> handle) {}
+    MessageQueue() = default;
+    std::queue<T> queue_{};                      // the queue of messages
+    std::coroutine_handle<> m_awaiter{nullptr};  // the coroutine handle of the current awaiter
 
-    T await_resume() {
-        T value = std::move(queue_.front());
-        queue_.pop();
-        return value;
+    void pushMessage(T message) {
+        queue_.push(message);
+        if (m_awaiter && !m_awaiter.done()) {  // if there is a coroutine waiting for a message
+            m_awaiter.resume();
+        }
     }
-
-   private:
-    std::queue<T>& queue_;
 };
 
 #endif

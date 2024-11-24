@@ -8,7 +8,7 @@
 #include "telegram_client_pch.h"
 #include <tgbot/tgbot.h>
 
-Task clientEntry(ChatIdType chatId, std::queue<TgMsg>& messageQueue, std::stack<Task>& coroutineStack, TgBot::Bot& bot);
+Task clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot);
 
 
 #endif // CLIENT_ENTRY_H

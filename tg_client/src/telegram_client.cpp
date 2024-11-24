@@ -8,30 +8,28 @@
 #include <stack>
 class ChatSessions {
     TgBot::Bot& bot;
-    std::unordered_map<ChatIdType, std::stack<Task>> chatCoroutines;
-    std::unordered_map<ChatIdType, std::queue<TgMsg>> chatMessageQueues;
+    std::unordered_map<ChatIdType, Task> chatCoroutines;
+    std::unordered_map<ChatIdType, MessageQueue<TgMsg>> chatMessageQueues;
 
    public:
     ChatSessions(TgBot::Bot& bot) : bot(bot) {}
 
     bool hasSession(ChatIdType chatId) const {
         if (chatCoroutines.find(chatId) == chatCoroutines.end() ) return false;
-        if (!chatCoroutines.at(chatId).top().handle_) return false;
-        if (chatCoroutines.at(chatId).top().handle_.done()) return false;
+        if (!chatCoroutines.at(chatId).handle_) return false;
+        if (chatCoroutines.at(chatId).handle_.done()) return false;
         return true;
     }
 
     void createNewSession(ChatIdType chatId) {
         // new clients are handled via clientEntry coroutine
-        chatCoroutines.insert_or_assign(chatId, std::stack<Task>());
-        chatMessageQueues.insert_or_assign(chatId, std::queue<TgMsg>());
-        chatCoroutines.at(chatId).emplace(clientEntry(chatId, chatMessageQueues.at(chatId), chatCoroutines.at(chatId), bot));
-        chatCoroutines.at(chatId).top().handle_.resume();
+        chatMessageQueues.insert_or_assign(chatId, MessageQueue<TgMsg>());
+        chatCoroutines.insert_or_assign(chatId, clientEntry(chatId, chatMessageQueues.at(chatId), bot));
+        chatCoroutines.at(chatId).handle_.resume();
     }
 
     void passMessage(ChatIdType chatId, TgMsg message) {
-        chatMessageQueues[chatId].push(message);
-        chatCoroutines.at(chatId).top().handle_.resume();
+        chatMessageQueues.at(chatId).pushMessage(message);
     }
 };
 
