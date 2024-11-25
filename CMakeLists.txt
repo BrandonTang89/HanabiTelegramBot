@@ -41,6 +41,7 @@ set(PROTO_FILES
     ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/CreateSessionAck.proto
     ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/JoinRandomSessionAck.proto
     ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/StartGame.proto
+    ${CMAKE_CURRENT_SOURCE_DIR}/common/proto/InfoMessage.proto
 )
 set(PROTO_OUT ${CMAKE_CURRENT_BINARY_DIR}/proto)
 file(MAKE_DIRECTORY ${PROTO_OUT})

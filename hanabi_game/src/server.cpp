@@ -111,11 +111,18 @@ void join_session(Player joiner, int sessionId) {
         sendBytes(joiner.socket, serialisedAck);
         return;
     }
+
+    Player& player = playerOpt.value().get();
     ack.set_status(AckStatus::ACK_SUCCEED);
     ack.set_message("Successfully joined session!");
     ack.set_session_id(sessionId);
     string serialisedAck = ack.SerializeAsString();
-    sendBytes(playerOpt.value().get().socket, serialisedAck);
+    sendBytes(player.socket, serialisedAck);
+    
+    // TO DO, inform other players
+    lock.lock();
+    sessions[sessionId].broadcast(player.name + " has joined the session!");
+    lock.unlock();
     // no more control over joiner
 }
 

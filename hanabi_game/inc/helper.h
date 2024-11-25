@@ -1,7 +1,6 @@
 #pragma once
 #include <stdexcept>
 
-#include "pch.h"
 #include "sockets.h"
 #include "player.h"
 

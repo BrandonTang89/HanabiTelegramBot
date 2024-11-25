@@ -11,7 +11,10 @@ void sendBytes(tcp::socket& socket, const string& message) {
     std::vector<boost::asio::const_buffer> buffers;
     buffers.push_back(boost::asio::buffer(&length, sizeof(length)));
     buffers.push_back(boost::asio::buffer(message));
+
+    BOOST_LOG_TRIVIAL(trace) << "Sending: " << message;
     boost::asio::write(socket, buffers);
+    BOOST_LOG_TRIVIAL(trace) << "Sent " << message.size() << " bytes";
 }
 
 string readBytes(tcp::socket& socket) {
@@ -22,6 +25,7 @@ string readBytes(tcp::socket& socket) {
     std::vector<char> buffer(length);
     boost::asio::read(socket, boost::asio::buffer(buffer.data(), buffer.size()));
 
+    BOOST_LOG_TRIVIAL(trace) << "Received: " << string(buffer.data(), buffer.size());
     return string(buffer.data(), buffer.size());
 }
 

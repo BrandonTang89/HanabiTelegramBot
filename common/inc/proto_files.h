@@ -6,3 +6,4 @@
 #include "JoinSessionAck.pb.h"
 #include "NewConnect.pb.h"
 #include "StartGame.pb.h"
+#include "InfoMessage.pb.h"

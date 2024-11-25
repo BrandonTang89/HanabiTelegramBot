@@ -1,19 +1,21 @@
 #include "client_entry.h"
 #include "loadenv.h"
+#include "pch.h"
 #include "telegram_client_coroutine.hpp"
 #include "telegram_client_pch.h"
 
 class ChatSessions {
-    private:
-    TgBot::Bot& bot;
+   private:
+    TgBot::Bot& bot;                  // telegram bot to send messages
+    boost::asio::io_context& io_ctx;  // io_ctx for async operations
     std::unordered_map<ChatIdType, Task<void>> chatCoroutines;
     std::unordered_map<ChatIdType, MessageQueue<TgMsg>> chatMessageQueues;
 
    public:
-    ChatSessions(TgBot::Bot& bot) : bot(bot) {}
+    ChatSessions(TgBot::Bot& bot_, boost::asio::io_context& io_ctx_) : bot(bot_), io_ctx(io_ctx_) {}
 
     bool hasSession(ChatIdType chatId) const {
-        if (chatCoroutines.find(chatId) == chatCoroutines.end() ) return false;
+        if (chatCoroutines.find(chatId) == chatCoroutines.end()) return false;
         if (!chatCoroutines.at(chatId).handle_) return false;
         if (chatCoroutines.at(chatId).handle_.done()) return false;
         return true;
@@ -22,8 +24,8 @@ class ChatSessions {
     void createNewSession(ChatIdType chatId) {
         // new clients are handled via clientEntry coroutine
         chatMessageQueues.insert_or_assign(chatId, MessageQueue<TgMsg>());
-        chatCoroutines.insert_or_assign(chatId, clientEntry(chatId, chatMessageQueues.at(chatId), bot));
-        chatCoroutines.at(chatId).handle_.resume(); // start the coroutine
+        chatCoroutines.insert_or_assign(chatId, clientEntry(chatId, chatMessageQueues.at(chatId), bot, io_ctx));
+        chatCoroutines.at(chatId).handle_.resume();  // start the coroutine
     }
 
     void passMessage(ChatIdType chatId, TgMsg message) {
@@ -39,7 +41,8 @@ class ChatSessions {
 int main() {
     loadEnv();
     TgBot::Bot bot(getenv("TELEGRAM_BOT_API_TOKEN"));
-    ChatSessions chatSessions(bot);
+    boost::asio::io_context io_ctx;
+    ChatSessions chatSessions(bot, io_ctx);
 
     bot.getEvents().onAnyMessage([&bot, &chatSessions](TgBot::Message::Ptr message) {
         if (!chatSessions.hasSession(message->chat->id)) {
@@ -59,6 +62,21 @@ int main() {
         chatSessions.passMessage(message->chat->id, message);
     });
 
+    // Run the io_ctx in a separate thread
+    std::thread ioThread([&io_ctx]() {
+        try {
+            while (true) {
+                io_ctx.poll();
+                io_ctx.restart();
+            }
+
+        } catch (std::exception& e) {
+            std::cerr << "Exception in io_ctx: " << e.what() << std::endl;
+        }
+    });
+    ioThread.detach();
+
+    // Main thread is in charge of handling telegram events
     try {
         printf("Bot username: %s\n", bot.getApi().getMe()->username.c_str());
         TgBot::TgLongPoll longPoll(bot);

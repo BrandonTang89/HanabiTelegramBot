@@ -1,10 +1,10 @@
 #include "client_entry.h"
 
 #include "pch.h"
-#include "telegram_client_pch.h"
 #include "proto_files.h"
 #include "sockets.h"
 #include "telegram_client_coroutine.hpp"
+#include "telegram_client_pch.h"
 #include "telegram_keyboard.h"
 using namespace boost::asio;
 using namespace Ack;
@@ -65,13 +65,35 @@ Task<> waitUntilStartCommand(ChatIdType chatId, TgBot::Bot& bot, MessageQueue<Tg
     co_return;
 }
 
-Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot) {
+void subscribeToInfo(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot) {
+    BOOST_LOG_TRIVIAL(trace) << "registered to info " << chatId;
+    uint32_t* lengthPtr = new uint32_t;  // we need to use a raw pointer here to avoid lifetime issues
+    async_read(socket, boost::asio::buffer(lengthPtr, sizeof(*lengthPtr)), [&, lengthPtr](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+        BOOST_LOG_TRIVIAL(info) << "Received " << bytes_transferred << " bytes";
+        if (ec) {
+            BOOST_LOG_TRIVIAL(error) << "Error in async_read_some: " << ec.message();
+            return;
+        }
+        uint32_t length = ntohl(*lengthPtr);
+        delete lengthPtr;  // free the memory
+        std::vector<char> buffer(length);
+        boost::asio::read(socket, boost::asio::buffer(buffer.data(), buffer.size()));
+
+        InfoMessage infoMsg;
+        infoMsg.ParseFromString(string(buffer.data(), buffer.size()));
+        bot.getApi().sendMessage(chatId, infoMsg.message());
+
+        subscribeToInfo(socket, chatId, bot);
+    });
+    return;
+}
+
+Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot& bot, io_context& io_ctx) {
     // Connects to the server as a new client
     // Create a socket connected to the server at localhost:1234
     // Move down eventually when the project matures (now here for debug)
 
-    io_service io_service;
-    ip::tcp::socket socket(io_service);
+    ip::tcp::socket socket(io_ctx);
     socket.connect(ip::tcp::endpoint(ip::address::from_string("127.0.0.1"), 1234));
     BOOST_LOG_TRIVIAL(info) << "Client of id " << chatId << " connected to server";
 
@@ -88,7 +110,8 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
     co_await welcomeTask(chatId, bot);  // Display welcome message to user
 
     // Get Name
-    std::string name = co_await getNameTask(chatId, bot, msgQueue);
+    // std::string name = co_await getNameTask(chatId, bot, msgQueue);
+    std::string name = "Brandon";
     bot.getApi().sendMessage(chatId, "Your name is: " + name);
 
     // Get Operation
@@ -143,6 +166,8 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
             co_return;
         }
         bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
+
+        subscribeToInfo(socket, chatId, bot);
     }
 
     if (isLeader) {
@@ -164,6 +189,9 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
         // Wait until start then start
 
         while (true) {
+            // Register to forward messages from the server regarding other players joining to the user
+            subscribeToInfo(socket, chatId, bot);
+
             co_await waitUntilStartCommand(chatId, bot, msgQueue);
             StartGameMsg startGameMsg;
             sendBytes(socket, startGameMsg.SerializeAsString());

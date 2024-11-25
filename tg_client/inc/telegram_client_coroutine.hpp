@@ -1,7 +1,6 @@
 #pragma once
 #include <coroutine>
 #include <queue>
-
 #include "pch.h"
 
 // Lazily started coroutine returning a Result

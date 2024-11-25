@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+
+#include "proto_files.h"
 #include "pch.h"
 #include "player.h"
 #include "sockets.h"
@@ -41,28 +43,17 @@ std::optional<std::reference_wrapper<Player>> Session::join(Player& player) {
     numPlayers++;
     BOOST_LOG_TRIVIAL(debug) << players.back() << " successfully joined session " << sessionId;
 
-    // // Notify all players in the session
-    // for (int i = 0; i < numPlayers - 1; i++) {
-    //     send_(players[i].socket, players.back().name + " has joined the session!\n");
-    // }
-
-    // // Notify the new player
-    // send_(players.back().socket, "You have joined session " + std::to_string(sessionId) + "!\n");
-    // send_(players.back().socket, "You are player " + std::to_string(numPlayers) + "\n");
-
-    // send_(players.back().socket, "The other player(s) in the session are:\n");
-    // send_(players.back().socket, players[0].name + " (leader)\n");
-    // for (int i = 1; i < numPlayers - 1; i++) {
-    //     send_(players.back().socket, players[i].name + "\n");
-    // }
-
     return players.back();
 }
 
 void Session::broadcast(const string& message) {
+    InfoMessage infoMsg;
+    infoMsg.set_message(message);
+
     std::lock_guard<std::mutex> guard(session_mutex);
+    BOOST_LOG_TRIVIAL(debug) << "Broadcasting message to all players in session " << sessionId << ": " << message;
     for (auto& player : players) {
-        send_(player.socket, message);
+        sendBytes(player.socket, infoMsg.SerializeAsString());
     }
 }
 

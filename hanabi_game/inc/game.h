@@ -1,6 +1,6 @@
 #pragma once
 #include <vector>
-#include <iostream>
+#include <iosfwd>
 
 #include "player.h"
 #include "session.h"
