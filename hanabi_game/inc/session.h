@@ -25,6 +25,7 @@ class Session {
     Player& getLeader();
     int getNumPlayers() const;
     void broadcast(const std::string& message);
+    void broadcast_status();
     int getId() const;
     void invalidate();
 

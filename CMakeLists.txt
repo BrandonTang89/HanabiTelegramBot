@@ -88,7 +88,9 @@ target_link_libraries(HanabiGame CommonPCH HanabiCommon)
 add_executable(HanabiTelegramClient 
     tg_client/src/telegram_client.cpp 
     tg_client/src/client_entry.cpp 
+    tg_client/src/client_input_tasks.cpp
     tg_client/src/telegram_keyboard.cpp
+    tg_client/src/client_entry_helpers.cpp
 )
 
 target_compile_definitions(HanabiTelegramClient PRIVATE BOOST_ASIO_SEPARATE_COMPILATION)

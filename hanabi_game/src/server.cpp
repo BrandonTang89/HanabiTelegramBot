@@ -2,11 +2,11 @@
 #include <mutex>
 #include <thread>
 
-#include "pch.h"
-#include "proto_files.h"
 #include "game.h"
 #include "helper.h"
+#include "pch.h"
 #include "player.h"
+#include "proto_files.h"
 #include "session.h"
 #include "sockets.h"
 
@@ -68,7 +68,12 @@ void create_session(Player leader) {
     }
 
     // // Construct the game object
-    // send_(player_socket, "Starting the game...\n");
+    InfoMessage infoMsg;
+    infoMsg.set_message("Game started!");
+    lock.lock();
+    session.broadcast(infoMsg.SerializeAsString());
+    lock.unlock();
+
     // std::unique_ptr<Game> gptr{new Game(std::move(session))};  // allocate on heap to avoid stack overflow
 
     // // Remove the session from the hashtable
@@ -118,10 +123,11 @@ void join_session(Player joiner, int sessionId) {
     ack.set_session_id(sessionId);
     string serialisedAck = ack.SerializeAsString();
     sendBytes(player.socket, serialisedAck);
-    
+
     // TO DO, inform other players
     lock.lock();
     sessions[sessionId].broadcast(player.name + " has joined the session!");
+    sessions[sessionId].broadcast_status();
     lock.unlock();
     // no more control over joiner
 }
@@ -131,8 +137,8 @@ void join_random_session(Player joiner) {
     BOOST_LOG_TRIVIAL(info) << joiner << " joining random session...";
     std::unique_lock<std::mutex> lock(sessions_mutex);
     for (auto& [session_id, session] : sessions) {
-        std::optional<std::reference_wrapper<Player>> joinerOpt{session.join(joiner)};
-        if (joinerOpt.has_value()) {  // join the first available session
+        std::optional<std::reference_wrapper<Player>> playerOpt{session.join(joiner)};
+        if (playerOpt.has_value()) {  // join the first available session
             lock.unlock();
 
             // Send the session id to the joiner
@@ -141,7 +147,14 @@ void join_random_session(Player joiner) {
             ack.set_message("Joined Existing Session!");
             ack.set_session_id(session_id);
             string serialisedAck = ack.SerializeAsString();
-            sendBytes(joinerOpt.value().get().socket, serialisedAck);
+            sendBytes(playerOpt.value().get().socket, serialisedAck);
+
+            // Inform other players
+            Player& player = playerOpt.value().get();
+            lock.lock();
+            sessions[session_id].broadcast(player.name + " has joined the session!");
+            sessions[session_id].broadcast_status();
+            lock.unlock();
 
             return;
         }

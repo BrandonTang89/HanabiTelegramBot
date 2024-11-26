@@ -1,11 +1,9 @@
 #include "session.h"
-
 #include <cassert>
 
-
-#include "proto_files.h"
 #include "pch.h"
 #include "player.h"
+#include "proto_files.h"
 #include "sockets.h"
 
 // Constructor
@@ -52,6 +50,22 @@ void Session::broadcast(const string& message) {
 
     std::lock_guard<std::mutex> guard(session_mutex);
     BOOST_LOG_TRIVIAL(debug) << "Broadcasting message to all players in session " << sessionId << ": " << message;
+    for (auto& player : players) {
+        sendBytes(player.socket, infoMsg.SerializeAsString());
+    }
+}
+
+void Session::broadcast_status() {
+    InfoMessage infoMsg;
+std:
+    string message = "Session " + std::to_string(sessionId) + " has " + std::to_string(numPlayers) + " players:\n";
+    for (auto& player : players) {
+        message += player.name + "\n";
+    }
+
+    infoMsg.set_message(message);
+
+    std::lock_guard<std::mutex> guard(session_mutex);
     for (auto& player : players) {
         sendBytes(player.socket, infoMsg.SerializeAsString());
     }
