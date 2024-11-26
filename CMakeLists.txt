@@ -78,6 +78,7 @@ add_executable(HanabiGame
     hanabi_game/src/player.cpp
     hanabi_game/src/server.cpp
     hanabi_game/src/session.cpp
+    hanabi_game/src/handle_client_helpers.cpp
 )
 
 target_compile_definitions(HanabiGame PRIVATE BOOST_ASIO_SEPARATE_COMPILATION)
