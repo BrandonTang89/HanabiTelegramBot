@@ -6,6 +6,7 @@ server
 
 # Ignore the build directory
 out/
+cmake-build-debug/
 
 # Ignore the environment file
 .env
