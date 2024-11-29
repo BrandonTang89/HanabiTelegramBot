@@ -29,7 +29,10 @@ Task<ClientOperation> getOperationTask(ChatIdType chatId, TgBot::Bot& bot, Messa
     std::vector<std::string> operationStrings = {"/createSession", "/joinSession", "/joinRandomSession"};
     TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
     createOneColumnKeyboard(operationStrings, operationKeyboard);
-    bot.getApi().sendMessage(chatId, "Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
+    bot.getApi().sendMessage(
+        chatId,
+        "Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session",
+        nullptr, 0, operationKeyboard);
     TgMsg message = co_await msgQueue;
     while (true) {
         if (message->text == "/createSession") {
@@ -39,7 +42,10 @@ Task<ClientOperation> getOperationTask(ChatIdType chatId, TgBot::Bot& bot, Messa
         } else if (message->text == "/joinRandomSession") {
             co_return ClientOperation::OP_JOIN_RANDOM_SESSION;
         } else {
-            bot.getApi().sendMessage(chatId, "Invalid operation! Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session", nullptr, 0, operationKeyboard);
+            bot.getApi().sendMessage(
+                chatId,
+                "Invalid operation! Please select an operation: \n 1. Create a new session \n 2. Join a specific session \n 3. Join a random session",
+                nullptr, 0, operationKeyboard);
             message = co_await msgQueue;
         }
     }

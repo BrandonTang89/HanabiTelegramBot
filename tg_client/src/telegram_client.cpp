@@ -14,25 +14,25 @@ class ChatSessions {
    public:
     ChatSessions(TgBot::Bot& bot_, boost::asio::io_context& io_ctx_) : bot(bot_), io_ctx(io_ctx_) {}
 
-    bool hasSession(ChatIdType chatId) const {
-        if (chatCoroutines.find(chatId) == chatCoroutines.end()) return false;
+    bool hasSession(const ChatIdType chatId) const {
+        if (!chatCoroutines.contains(chatId)) return false;
         if (!chatCoroutines.at(chatId).handle_) return false;
         if (chatCoroutines.at(chatId).handle_.done()) return false;
         return true;
     }
 
-    void createNewSession(ChatIdType chatId) {
+    void createNewSession(const ChatIdType chatId) {
         // new clients are handled via clientEntry coroutine
         chatMessageQueues.insert_or_assign(chatId, MessageQueue<TgMsg>());
         chatCoroutines.insert_or_assign(chatId, clientEntry(chatId, chatMessageQueues.at(chatId), bot, io_ctx));
         chatCoroutines.at(chatId).handle_.resume();  // start the coroutine
     }
 
-    void passMessage(ChatIdType chatId, TgMsg message) {
-        chatMessageQueues.at(chatId).pushMessage(message);
+    void passMessage(const ChatIdType chatId, TgMsg message) {
+        chatMessageQueues.at(chatId).pushMessage(std::move(message));
     }
 
-    void deleteSession(ChatIdType chatId) {
+    void deleteSession(const ChatIdType chatId) {
         chatCoroutines.erase(chatId);
         chatMessageQueues.erase(chatId);
     }
@@ -44,7 +44,7 @@ int main() {
     boost::asio::io_context io_ctx;
     ChatSessions chatSessions(bot, io_ctx);
 
-    bot.getEvents().onAnyMessage([&bot, &chatSessions](TgBot::Message::Ptr message) {
+    bot.getEvents().onAnyMessage([&bot, &chatSessions](const TgMsg& message) {
         if (!chatSessions.hasSession(message->chat->id)) {
             BOOST_LOG_TRIVIAL(info) << "Creating new chat session for chat " << message->chat->id;
             chatSessions.createNewSession(message->chat->id);

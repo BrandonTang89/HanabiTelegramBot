@@ -16,6 +16,7 @@ using namespace Ack;
 using ip::tcp;
 using std::string;
 
+
 std::mutex sessions_mutex;
 std::unordered_map<int, Session> sessions;  // session_id -> vector of sockets
 
@@ -31,9 +32,10 @@ void handle_client(tcp::socket socket) {
     std::optional<string> serialisedNewConnectionOpt{readBytesCatch(socket)};
     if (!serialisedNewConnectionOpt.has_value()) {
         BOOST_LOG_TRIVIAL(info) << "Client disconnected!";
+
         return;
     }
-    string serialisedNewConnection{serialisedNewConnectionOpt.value()};
+    const string& serialisedNewConnection{serialisedNewConnectionOpt.value()};
 
     NewConnection newConnection;
     if (!newConnection.ParseFromString(serialisedNewConnection)) {
@@ -54,10 +56,9 @@ void handle_client(tcp::socket socket) {
     } else {
         join_random_session(std::move(player));
     }
-    return;
 }
 
-int main(int, char*[]) {
+[[noreturn]] int main(int, char*[]) {
     boost::asio::io_service io_service;
     tcp::acceptor acceptor_(io_service, tcp::endpoint(tcp::v4(), 1234));  // listen for new connection
     BOOST_LOG_TRIVIAL(info) << "Server started!";
@@ -68,6 +69,4 @@ int main(int, char*[]) {
         BOOST_LOG_TRIVIAL(info) << "New Client Connected!";
         std::thread(handle_client, std::move(socket_)).detach();
     }
-
-    return 0;
 }

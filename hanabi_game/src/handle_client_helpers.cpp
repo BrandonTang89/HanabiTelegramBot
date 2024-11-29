@@ -23,7 +23,7 @@ void create_session(Player leader) {
     BOOST_LOG_TRIVIAL(info) << leader << " creating new session...";
 
     std::unique_lock<std::mutex> lock(sessions_mutex);
-    int session_id = sessions.size();
+    int session_id = static_cast<int>(sessions.size());
     sessions.emplace(session_id, Session(std::move(leader), session_id));
 
     // note that these references will not dangle on hash table resize
@@ -37,7 +37,7 @@ void create_session(Player leader) {
     ack.set_status(AckStatus::ACK_SUCCEED);
     ack.set_message("Session created successfully!");
     ack.set_session_id(session_id);
-    string serialisedAck = ack.SerializeAsString();
+    const string serialisedAck = ack.SerializeAsString();
     sendBytes(player_socket, serialisedAck);
 
     // Wait for all players to join
@@ -55,12 +55,10 @@ void create_session(Player leader) {
         StartGameMsg startGameMsg;
         startGameMsg.ParseFromString(serialisedStartGameMsgOpt.value());
         if (session.getNumPlayers() == 1) {
-            AckMessage ack;
             ack.set_status(AckStatus::ACK_FAILED);
             ack.set_message("Not enough players to start the game!");
             sendBytes(player_socket, ack.SerializeAsString());
         } else {
-            AckMessage ack;
             ack.set_status(AckStatus::ACK_SUCCEED);
             ack.set_message("You have started the game!");
             sendBytes(player_socket, ack.SerializeAsString());
@@ -84,7 +82,6 @@ void create_session(Player leader) {
 
     // // Start the game
     // gptr->start();
-    return;
 }
 
 void join_session(Player joiner, int sessionId) {
@@ -92,7 +89,7 @@ void join_session(Player joiner, int sessionId) {
     BOOST_LOG_TRIVIAL(debug) << joiner << " trying to join session " << sessionId;
     std::unique_lock<std::mutex> lock(sessions_mutex);
     JoinSessionAck ack;
-    if (sessions.find(sessionId) == sessions.end()) {
+    if (!sessions.contains(sessionId)) {
         ack.set_status(AckStatus::ACK_FAILED);
         ack.set_message("Session does not exist!");
         string serialisedAck = ack.SerializeAsString();
@@ -113,7 +110,7 @@ void join_session(Player joiner, int sessionId) {
     if (!playerOpt.has_value()) {
         ack.set_status(AckStatus::ACK_FAILED);
         ack.set_message("Failed to join session! (Unknown error)");
-        string serialisedAck = ack.SerializeAsString();
+        const string serialisedAck = ack.SerializeAsString();
         sendBytes(joiner.socket, serialisedAck);
         return;
     }
@@ -122,7 +119,7 @@ void join_session(Player joiner, int sessionId) {
     ack.set_status(AckStatus::ACK_SUCCEED);
     ack.set_message("Successfully joined session!");
     ack.set_session_id(sessionId);
-    string serialisedAck = ack.SerializeAsString();
+    const string serialisedAck = ack.SerializeAsString();
     sendBytes(player.socket, serialisedAck);
 
     lock.lock();
@@ -168,5 +165,4 @@ void join_random_session(Player joiner) {
     string serialisedAck = ack.SerializeAsString();
     sendBytes(joiner.socket, serialisedAck);
     create_session(std::move(joiner));
-    return;
 }
