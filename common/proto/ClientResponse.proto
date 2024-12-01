@@ -1,0 +1,5 @@
+syntax = "proto3";
+
+message ClientResponse {
+    optional int32 optionSelected = 1;
+}

@@ -25,7 +25,7 @@ class Game {
     int numBlackFuseTokens{};
 
 
-    Game(Session&& session);
+    explicit Game(Session&& session);
     void start();
     void displayHands();
     void displayTable();

@@ -9,18 +9,18 @@
 
 using namespace Ack;
 using namespace boost::asio;
-void subscribeToInfo(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot) {
-    BOOST_LOG_TRIVIAL(trace) << "registered to info " << chatId;
+void subscribeToInfo(const Client& client) {
+    BOOST_LOG_TRIVIAL(trace) << "registered to info " << client.chatId;
     uint32_t* lengthPtr = new uint32_t;  // we need to use a raw pointer here to avoid lifetime issues
-    async_read(socket, boost::asio::buffer(lengthPtr, sizeof(*lengthPtr)), [&, lengthPtr](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+    async_read(client.socket, boost::asio::buffer(lengthPtr, sizeof(*lengthPtr)), [lengthPtr, client](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+        auto& [chatId, socket, _, __, bot] = client;
         BOOST_LOG_TRIVIAL(info) << "Received " << bytes_transferred << " bytes";
         if (ec) {
             BOOST_LOG_TRIVIAL(error) << "Error in async_read_some: " << ec.message();
             return;
         }
-
         // BOOST_LOG_TRIVIAL(trace) << "Parsing length...";
-        uint32_t length = ntohl(*lengthPtr);
+        const uint32_t length = ntohl(*lengthPtr);
         delete lengthPtr;  // free the memory
         std::vector<char> buffer(length);
         boost::asio::read(socket, boost::asio::buffer(buffer.data(), buffer.size()));
@@ -29,13 +29,14 @@ void subscribeToInfo(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot) {
         infoMsg.ParseFromString(string(buffer.data(), buffer.size()));
         bot.getApi().sendMessage(chatId, infoMsg.message());
 
-        subscribeToInfo(socket, chatId, bot);
+        subscribeToInfo(client);
     });
 }
 
-std::optional<int> joinRandomSession(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot) {  // try to join random session, returns the sessionId if successful
+std::optional<int> joinRandomSession(Client client) {  // try to join random session, returns the sessionId if successful
+    auto& [chatId, socket, _, __, bot] = client;
     JoinRandomSessionAck joinRandomSessionAck;
-    std::string serialisedJoinRandomSessionAck = readBytes(socket);
+    const std::string serialisedJoinRandomSessionAck = readBytes(socket);
     joinRandomSessionAck.ParseFromString(serialisedJoinRandomSessionAck);
     bot.getApi().sendMessage(chatId, joinRandomSessionAck.message());
 
@@ -44,14 +45,15 @@ std::optional<int> joinRandomSession(tcp::socket& socket, ChatIdType& chatId, Tg
     } else {
         std::optional<int> sessionId = joinRandomSessionAck.session_id();
         bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
-        subscribeToInfo(socket, chatId, bot);
+        subscribeToInfo(client);
         return sessionId;
     }
 }
 
-std::optional<int> joinSpecificSession(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot) {
+std::optional<int> joinSpecificSession(Client client) {
+    auto& [chatId, socket, _, __, bot] = client;
     JoinSessionAck joinSessionAck;
-    std::string serialisedJoinSessionAck = readBytes(socket);
+    const std::string serialisedJoinSessionAck = readBytes(socket);
     joinSessionAck.ParseFromString(serialisedJoinSessionAck);
     bot.getApi().sendMessage(chatId, joinSessionAck.message());
 
@@ -64,15 +66,16 @@ std::optional<int> joinSpecificSession(tcp::socket& socket, ChatIdType& chatId, 
     }
     bot.getApi().sendMessage(chatId, "Your session ID is: " + std::to_string(sessionId.value()));
 
-    subscribeToInfo(socket, chatId, bot);
+    subscribeToInfo(client);
 
     return sessionId;
 }
 
-std::optional<int> createSession(tcp::socket& socket, ChatIdType& chatId, const TgBot::Bot& bot) {
+std::optional<int> createSession(Client client) {
+    auto& [chatId, socket, _, __, bot] = client;
     CreateSessionAck createSessionAck;
     BOOST_LOG_TRIVIAL(info) << "Waiting for server response...";
-    std::string serialisedCreateSessionAck = readBytes(socket);
+    const std::string serialisedCreateSessionAck = readBytes(socket);
     createSessionAck.ParseFromString(serialisedCreateSessionAck);
     bot.getApi().sendMessage(chatId, createSessionAck.message());
 

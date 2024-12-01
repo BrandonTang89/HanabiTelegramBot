@@ -4,7 +4,7 @@
 
 #include "card.h"
 #include "deck.h"
-#include "helper.h"
+#include "sockets_util.h"
 #include "pch.h"
 #include "player.h"
 #include "session.h"
@@ -76,9 +76,6 @@ void Game::start() {
 
     BOOST_LOG_TRIVIAL(debug) << *this << " has been set-up!";
 
-    display();
-    return;
-
     // main game loop
     int totalPts = 0;
     try {
@@ -115,42 +112,39 @@ void Game::start() {
 void Game::turn(const int playerIndex) {
     display();
     Player& player = players[playerIndex];
-    send_(player.socket, "It's your turn!\n");
+    sendInfo(player.socket, "It's your turn!\n", INFOSIGNAL_BREAK);
     for (int i = 0; i < numPlayers; i++) {
         if (i != playerIndex) {
-            send_(players[i].socket, "It's player " + std::to_string(playerIndex) + "'s turn! (" + players[playerIndex].name + ")\n");
+            sendInfo(players[i].socket, "It's player " + std::to_string(playerIndex) + "'s turn! (" + players[playerIndex].name + ")\n");
         }
     }
 
     while (true) {
-        bool turnDone = selectAction(playerIndex);
-        if (turnDone) break;
+        if (selectAction(playerIndex)) break;
     }
 }
 
-bool Game::selectAction(int playerIndex) {
+bool Game::selectAction(const int playerIndex) {
     Player& player = players[playerIndex];
-    send_(player.socket, "Select an action: \n");
-    send_(player.socket, "0. Play a card\n");
-    send_(player.socket, "1. Discard a card\n");
+    sendInfo(player.socket, "Select an action: \n");
+    sendInfo(player.socket, "0. Play a card\n");
+    sendInfo(player.socket, "1. Discard a card\n");
     if (numBlueTokens > 0) {
-        send_(player.socket, "2. Give a hint\n");
+        sendInfo(player.socket, "2. Give a hint\n");
     }
 
     const int action = requestInt(0, (numBlueTokens > 0 ? 2 : 1), "Invalid action. Please try again.\n", player);
+
+    BOOST_LOG_TRIVIAL(trace) << "Player " + std::to_string(playerIndex) + " selected action " + std::to_string(action);
     switch (action) {
         case 0:
-            return Game::playCard(playerIndex);
-            break;
+            return playCard(playerIndex);
         case 1:
-            return Game::discardCard(playerIndex);
-            break;
+            return discardCard(playerIndex);
         case 2:
-            return Game::giveHint(playerIndex);
-            break;
+            return giveHint(playerIndex);
         default:
             assert(false);
-            break;
     }
 }
 
@@ -270,7 +264,7 @@ bool Game::giveHint(const int playerIndex) {
             std::vector<std::reference_wrapper<Card>> targetedCards;
             for (Card& card : hands[hinteeIndexO.value()]) {
                 if (card.number == number) {
-                    targetedCards.push_back(card);
+                    targetedCards.emplace_back(card);
                 }
             }
 

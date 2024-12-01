@@ -8,9 +8,9 @@ using namespace boost::asio;
 using ip::tcp;
 using namespace Ack;
 
-Task<> welcomeTask(ChatIdType chatId, const TgBot::Bot& bot);
-Task<std::string> getNameTask(ChatIdType chatId, const TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue);
-Task<ClientOperation> getOperationTask(ChatIdType chatId, const TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue);
-Task<int> getSpecificSessionTask(ChatIdType chatId, const TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue);
-Task<> waitUntilStartCommand(ChatIdType chatId, const TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue);
-Task<> leaderTask(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue, const std::optional<int> sessionId);
+Task<> welcomeTask(Client client);
+Task<std::string> getNameTask(Client client);
+Task<ClientOperation> getOperationTask(Client client);
+Task<int> getSpecificSessionTask(Client client);
+Task<> waitUntilStartCommand(Client client);
+Task<> leaderTask(Client client, std::optional<int> sessionId);

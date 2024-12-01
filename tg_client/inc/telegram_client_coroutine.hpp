@@ -1,6 +1,7 @@
 #pragma once
 #include <coroutine>
 #include <queue>
+
 #include "pch.h"
 
 // Lazily started coroutine returning a Result
@@ -102,6 +103,41 @@ struct Task<void>::Promise {
 
     std::suspend_always initial_suspend() noexcept { return {}; }
     FinalAwaiter final_suspend() noexcept { return {}; }
+};
+
+class SignallingEvent {
+   public:
+    class AwaiterForSignal {
+       public:
+        explicit AwaiterForSignal(SignallingEvent e_) : event{e_} {}
+
+        bool await_ready() const noexcept {
+            return event.isSet();
+        }
+
+        void await_suspend(std::coroutine_handle<> handle) {
+            event.e_awaiter = handle;
+        }
+
+        void await_resume() {
+            event.unset();
+        }
+
+       private:
+        SignallingEvent& event;
+    };
+
+    auto operator co_await() noexcept {
+        return AwaiterForSignal(*this);
+    }
+
+    SignallingEvent() = default;
+    bool flag = false;
+    std::coroutine_handle<> e_awaiter{nullptr};  // the coroutine handle of the current awaiter
+
+    bool isSet() const { return flag; }
+    void set() { flag = true; }
+    void unset() { flag = false; }
 };
 
 template <typename T>

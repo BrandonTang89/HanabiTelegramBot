@@ -10,7 +10,8 @@ using ip::tcp;
 using namespace boost::asio;
 using namespace Ack;
 
-Task<> welcomeTask(ChatIdType chatId, const TgBot::Bot& bot) {
+Task<> welcomeTask(Client client) {
+    auto& [chatId, _, __, ___, bot] = client;
     const std::string welcomeMessage =
         "Welcome to Hanabi!\n Enter /quit anytime to exit. \n Please enter your "
         "name:";
@@ -19,20 +20,19 @@ Task<> welcomeTask(ChatIdType chatId, const TgBot::Bot& bot) {
     co_return;
 }
 
-Task<std::string> getNameTask(ChatIdType chatId, const TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue) {
+Task<std::string> getNameTask(Client client) {
+    auto& [chatId, _, msgQueue, __, bot] = client;
     TgMsg message = co_await msgQueue;
     while (message->text.empty() || message->text[0] == '/') {
-        bot.getApi().sendMessage(chatId,
-                                 "Name cannot be empty or begin with a /\n Please enter your name:");
+        bot.getApi().sendMessage(chatId,"Name cannot be empty or begin with a /\n Please enter your name:");
         message = co_await msgQueue;
     }
     co_return std::string(message->text);
 }
 
-Task<ClientOperation> getOperationTask(ChatIdType chatId, const TgBot::Bot& bot,
-                                       MessageQueue<TgMsg>& msgQueue) {
-    std::vector<std::string> operationStrings = {"/createSession", "/joinSession",
-                                                 "/joinRandomSession"};
+Task<ClientOperation> getOperationTask(Client client) {
+    auto& [chatId, _, msgQueue, __, bot] = client;
+    const std::vector<std::string> operationStrings = {"/createSession", "/joinSession", "/joinRandomSession"};
     TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
     createOneColumnKeyboard(operationStrings, operationKeyboard);
     bot.getApi().sendMessage(chatId,
@@ -57,8 +57,8 @@ Task<ClientOperation> getOperationTask(ChatIdType chatId, const TgBot::Bot& bot,
     }
 }
 
-Task<int> getSpecificSessionTask(ChatIdType chatId, const TgBot::Bot& bot,
-                                 MessageQueue<TgMsg>& msgQueue) {
+Task<int> getSpecificSessionTask(Client client) {
+    auto& [chatId, _, msgQueue, __, bot] = client;
     bot.getApi().sendMessage(chatId, "Please enter the session ID:");
     TgMsg message = co_await msgQueue;
     while (message->text.empty() ||
@@ -69,7 +69,8 @@ Task<int> getSpecificSessionTask(ChatIdType chatId, const TgBot::Bot& bot,
     co_return std::stoi(message->text);
 }
 
-Task<> waitUntilStartCommand(ChatIdType chatId, const TgBot::Bot& bot, MessageQueue<TgMsg>& msgQueue) {
+Task<> waitUntilStartCommand(Client client) {
+    auto& [chatId, _, msgQueue, __, bot] = client;
     bot.getApi().sendMessage(chatId, "Please enter /start to start the game!");
     TgMsg message = co_await msgQueue;
     while (message->text != "/start") {
@@ -79,16 +80,16 @@ Task<> waitUntilStartCommand(ChatIdType chatId, const TgBot::Bot& bot, MessageQu
     co_return;
 }
 
-Task<> leaderTask(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot,
-                  MessageQueue<TgMsg>& msgQueue, const std::optional<int> sessionId) {
+Task<> leaderTask(Client client, const std::optional<int> sessionId) {
+    auto& [chatId, socket, msgQueue, _, bot] = client;
     // Wait until start then start the game
     while (true) {
         // Register to forward messages from the server regarding other players
         // joining to the user
-        subscribeToInfo(socket, chatId, bot);
+        subscribeToInfo(client);
 
         BOOST_LOG_TRIVIAL(info) << "Waiting for start command...";
-        co_await waitUntilStartCommand(chatId, bot, msgQueue);
+        co_await waitUntilStartCommand(client);
 
         socket.cancel();  // cancel the async read
         StartGameMsg startGameMsg;
@@ -106,5 +107,5 @@ Task<> leaderTask(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot,
             bot.getApi().sendMessage(chatId, startGameAck.message());
         }
     }
-    subscribeToInfo(socket, chatId, bot);
+    subscribeToInfo(client);
 }
