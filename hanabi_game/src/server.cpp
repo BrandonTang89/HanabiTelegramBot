@@ -16,7 +16,6 @@ using namespace Ack;
 using ip::tcp;
 using std::string;
 
-
 std::mutex sessions_mutex;
 std::unordered_map<int, Session> sessions;  // session_id -> vector of sockets
 

@@ -2,7 +2,7 @@
     "version": 6,
     "configurePresets": [
         {
-            "name": "WSL G++13",
+            "name": "wsl",
             "displayName": "GCC 13.2.0 x86_64-linux-gnu",
             "description": "Using compilers: C = /usr/bin/gcc, CXX = /usr/bin/g++",
             "generator": "Ninja",
