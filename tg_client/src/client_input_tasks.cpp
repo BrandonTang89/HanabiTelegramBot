@@ -33,8 +33,7 @@ Task<std::string> getNameTask(Client client) {
 Task<ClientOperation> getOperationTask(Client client) {
     auto& [chatId, _, msgQueue, __, bot] = client;
     const std::vector<std::string> operationStrings = {"/createSession", "/joinSession", "/joinRandomSession"};
-    TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard(new TgBot::ReplyKeyboardMarkup);
-    createOneColumnKeyboard(operationStrings, operationKeyboard);
+    const TgBot::ReplyKeyboardMarkup::Ptr operationKeyboard = createOneColumnKeyboard(operationStrings);
     bot.getApi().sendMessage(chatId,
                              "Please select an operation: \n 1. Create a new session \n 2. Join a "
                              "specific session \n 3. Join a random session",

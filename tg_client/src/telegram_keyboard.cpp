@@ -11,11 +11,13 @@ TgBot::KeyboardButton::Ptr createKeyboardButton(const std::string& text) {
 
     return button;
 }
-void createOneColumnKeyboard(const std::vector<std::string>& buttonStrings, const TgBot::ReplyKeyboardMarkup::Ptr& kb) {
+TgBot::ReplyKeyboardMarkup::Ptr createOneColumnKeyboard(const std::vector<std::string>& buttonStrings) {
+    const TgBot::ReplyKeyboardMarkup::Ptr kb(new TgBot::ReplyKeyboardMarkup);
     for (const auto& buttonString : buttonStrings) {
         std::vector<TgBot::KeyboardButton::Ptr> row;
         TgBot::KeyboardButton::Ptr button(createKeyboardButton(buttonString));
         row.push_back(button);
         kb->keyboard.push_back(row);
     }
+    return kb;
 }

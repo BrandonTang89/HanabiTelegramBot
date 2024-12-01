@@ -27,10 +27,20 @@ void subscribeToInfo(const Client& client) {
         // BOOST_LOG_TRIVIAL(trace) << "Received info message!";
         InfoMessage infoMsg;
         infoMsg.ParseFromString(string(buffer.data(), buffer.size()));
-        bot.getApi().sendMessage(chatId, infoMsg.message());
 
+        if (infoMsg.has_signal() && infoMsg.signal() == INFOSIGNAL_BREAK) {
+            client.clientEvent.set();
+            return;
+        }
+
+        bot.getApi().sendMessage(chatId, infoMsg.message());
         subscribeToInfo(client);
     });
+}
+
+void replyBytes(const Client& client, const std::string& serialisedMsg) {
+    sendBytes(client.socket, serialisedMsg);
+    subscribeToInfo(client);
 }
 
 std::optional<int> joinRandomSession(Client client) {  // try to join random session, returns the sessionId if successful

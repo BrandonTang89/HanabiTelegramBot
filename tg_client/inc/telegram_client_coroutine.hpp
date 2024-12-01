@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <coroutine>
 #include <queue>
 
@@ -109,7 +110,7 @@ class SignallingEvent {
    public:
     class AwaiterForSignal {
        public:
-        explicit AwaiterForSignal(SignallingEvent e_) : event{e_} {}
+        explicit AwaiterForSignal(SignallingEvent& e_) : event{e_} {}
 
         bool await_ready() const noexcept {
             return event.isSet();
@@ -136,7 +137,13 @@ class SignallingEvent {
     std::coroutine_handle<> e_awaiter{nullptr};  // the coroutine handle of the current awaiter
 
     bool isSet() const { return flag; }
-    void set() { flag = true; }
+    void set() {
+        assert(!flag);
+        flag = true;
+        if (e_awaiter && !e_awaiter.done()) {  // if there is a coroutine waiting for this set
+            e_awaiter.resume();
+        }
+    }
     void unset() { flag = false; }
 };
 

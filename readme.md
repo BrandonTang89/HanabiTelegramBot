@@ -49,3 +49,4 @@ In the telegram client code, we can assume that the connection to the server wil
   - Bold headers
   - Emojis
 - Implement turn based game play
+  - The coroutine in MsgQueue and Event is shared so a new message can interrupt the current thing. We need to do something about it eventually.

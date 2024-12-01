@@ -13,6 +13,7 @@ using namespace Ack;
 using namespace boost::asio;
 
 void subscribeToInfo(const Client& client);
+void replyBytes(const Client& client, const std::string& serialisedMsg);
 std::optional<int> joinRandomSession(Client client);
 std::optional<int> joinSpecificSession(Client client);
 std::optional<int> createSession(Client client);

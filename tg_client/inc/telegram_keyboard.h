@@ -9,4 +9,4 @@
 TgBot::KeyboardButton::Ptr createKeyboardButton(const std::string& text);
 
 // Function to create a one-column keyboard
-void createOneColumnKeyboard(const std::vector<std::string>& buttonStrings, const TgBot::ReplyKeyboardMarkup::Ptr& kb);
+TgBot::ReplyKeyboardMarkup::Ptr createOneColumnKeyboard(const std::vector<std::string>& buttonStrings);

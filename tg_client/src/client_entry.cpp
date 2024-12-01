@@ -92,10 +92,19 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
     // === Game has started
     // All execution traces that lead to here have the socket subscribing to the info messages
     while (true) {
-        // co_await clientEvent; // wait for the signal that it is my turn
+        co_await clientEvent; // wait for the signal that it is my turn
+        BOOST_LOG_TRIVIAL(debug) << "Player " << chatId << "'s turn";
+        string actionStr = "Select an action: \n";
+        actionStr += "0. Play a card\n";
+        actionStr += "1. Discard a card\n";
+        actionStr += "2. Give a hint\n";
+        const std::vector<std::string> actionStrings = {"/playCard", "/discardCard", "/giveHint"};
+        TgBot::ReplyKeyboardMarkup::Ptr actionKeyboard = createOneColumnKeyboard(actionStrings);
+        bot.getApi().sendMessage(chatId, actionStr, nullptr, nullptr, actionKeyboard);
 
         const TgMsg text = co_await msgQueue;
-        bot.getApi().sendMessage(chatId, "Your message is: " + text->text);
+        bot.getApi().sendMessage(chatId, "Your action is: " + text->text);
+        // process using replyBytes
     }
 
     co_return;

@@ -85,8 +85,7 @@ void Game::start() {
             turn(curPlayer);
             curPlayer = (curPlayer + 1) % numPlayers;
 
-            // Perform the turn
-            turn(curPlayer);
+            return; // only do 1 turn for now
 
             // Check if game is over
             totalPts = 0;
@@ -112,7 +111,7 @@ void Game::start() {
 void Game::turn(const int playerIndex) {
     display();
     Player& player = players[playerIndex];
-    sendInfo(player.socket, "It's your turn!\n", INFOSIGNAL_BREAK);
+    sendInfo(player.socket, "It's your turn!\n");
     for (int i = 0; i < numPlayers; i++) {
         if (i != playerIndex) {
             sendInfo(players[i].socket, "It's player " + std::to_string(playerIndex) + "'s turn! (" + players[playerIndex].name + ")\n");
@@ -126,14 +125,7 @@ void Game::turn(const int playerIndex) {
 
 bool Game::selectAction(const int playerIndex) {
     Player& player = players[playerIndex];
-    sendInfo(player.socket, "Select an action: \n");
-    sendInfo(player.socket, "0. Play a card\n");
-    sendInfo(player.socket, "1. Discard a card\n");
-    if (numBlueTokens > 0) {
-        sendInfo(player.socket, "2. Give a hint\n");
-    }
-
-    const int action = requestInt(0, (numBlueTokens > 0 ? 2 : 1), "Invalid action. Please try again.\n", player);
+    const int action = requestInt(0, 2, "Invalid action. Please try again.\n", player);
 
     BOOST_LOG_TRIVIAL(trace) << "Player " + std::to_string(playerIndex) + " selected action " + std::to_string(action);
     switch (action) {
@@ -195,6 +187,10 @@ bool Game::discardCard(const int playerIndex) {
 }
 
 bool Game::giveHint(const int playerIndex) {
+    if (numBlueTokens == 0) {
+        send_(players[playerIndex].socket, "No blue tokens left to give hints!\n");
+        return false;
+    }
     Player& player = players[playerIndex];
     send_(player.socket, "Select a player to give hint to, or -1 to go back: \n");
     std::optional<int> hinteeIndexO = std::nullopt;
