@@ -1,4 +1,3 @@
-#include <iostream>
 #include <mutex>
 #include <thread>
 
@@ -73,15 +72,15 @@ void create_session(Player leader) {
     session.broadcast(infoMsg.SerializeAsString());
     lock.unlock();
 
-    // std::unique_ptr<Game> gptr{new Game(std::move(session))};  // allocate on heap to avoid stack overflow
+    const std::unique_ptr<Game> game_ptr{new Game(std::move(session))};  // allocate on heap to avoid stack overflow
 
     // // Remove the session from the hashtable
-    // lock.lock();
-    // sessions.erase(session_id);
-    // lock.unlock();
+    lock.lock();
+    sessions.erase(session_id);
+    lock.unlock();
 
     // // Start the game
-    // gptr->start();
+    game_ptr->start();
 }
 
 void join_session(Player joiner, int sessionId) {
@@ -92,7 +91,7 @@ void join_session(Player joiner, int sessionId) {
     if (!sessions.contains(sessionId)) {
         ack.set_status(AckStatus::ACK_FAILED);
         ack.set_message("Session does not exist!");
-        string serialisedAck = ack.SerializeAsString();
+        const string serialisedAck = ack.SerializeAsString();
         lock.unlock();
         sendBytes(joiner.socket, serialisedAck);
         return;
@@ -105,7 +104,7 @@ void join_session(Player joiner, int sessionId) {
         sendBytes(joiner.socket, serialisedAck);
         return;
     }
-    std::optional<std::reference_wrapper<Player>> playerOpt = sessions[sessionId].join(joiner);
+    const std::optional<std::reference_wrapper<Player>> playerOpt = sessions[sessionId].join(joiner);
     lock.unlock();
     if (!playerOpt.has_value()) {
         ack.set_status(AckStatus::ACK_FAILED);

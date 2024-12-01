@@ -2,6 +2,7 @@
 
 #include <string>
 #include "pch.h"
+#include "proto_files.h"
 using boost::asio::ip::tcp;
 using std::string;
 
@@ -9,8 +10,8 @@ using std::string;
 void sendBytes(tcp::socket& socket, const string& message) {
     uint32_t length = htonl(message.size());
     std::vector<boost::asio::const_buffer> buffers;
-    buffers.push_back(boost::asio::buffer(&length, sizeof(length)));
-    buffers.push_back(boost::asio::buffer(message));
+    buffers.emplace_back(boost::asio::buffer(&length, sizeof(length)));
+    buffers.emplace_back(boost::asio::buffer(message));
 
     BOOST_LOG_TRIVIAL(trace) << "Sending: " << message;
     boost::asio::write(socket, buffers);
@@ -26,7 +27,7 @@ string readBytes(tcp::socket& socket) {
     boost::asio::read(socket, boost::asio::buffer(buffer.data(), buffer.size()));
 
     BOOST_LOG_TRIVIAL(trace) << "Received: " << string(buffer.data(), buffer.size());
-    return string(buffer.data(), buffer.size());
+    return {buffer.data(), buffer.size()};
 }
 
 std::optional<string> readBytesCatch(tcp::socket& socket) noexcept {
@@ -38,11 +39,17 @@ std::optional<string> readBytesCatch(tcp::socket& socket) noexcept {
     }
 }
 
+void sendInfo(tcp::socket& socket, const string& message, InfoSignal signal) {
+    InfoMessage info;
+    info.set_signal(signal);
+    info.set_message(message);
+    sendBytes(socket, info.SerializeAsString());
+}
+
 // === Deprecated ===
 // Send strings delimited by \n
 void send_(tcp::socket& socket, const string& message) noexcept {
     try {
-        const string msg = message;
         BOOST_LOG_TRIVIAL(trace) << "Sending: " << message;
         boost::asio::write(socket, boost::asio::buffer(message));
     } catch (const std::exception& e) {

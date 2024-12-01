@@ -7,7 +7,6 @@
 #include "sockets.h"
 #include "telegram_client_coroutine.hpp"
 #include "telegram_client_pch.h"
-#include "telegram_keyboard.h"
 using namespace boost::asio;
 using namespace Ack;
 
@@ -31,12 +30,16 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
     co_await welcomeTask(chatId, bot);  // Display welcome message to user
 
     // Get Name
+    // DEBUG ONLY
     // std::string name = co_await getNameTask(chatId, bot, msgQueue);
     std::string name = "Brandon";
     bot.getApi().sendMessage(chatId, "Your name is: " + name);
 
     // Get Operation
-    ClientOperation operation = co_await getOperationTask(chatId, bot, msgQueue);
+    // DEBUG ONLY
+    // ClientOperation operation = co_await getOperationTask(chatId, bot, msgQueue);
+    ClientOperation operation = ClientOperation::OP_JOIN_RANDOM_SESSION;
+
     std::optional<int> sessionId;
     if (operation == ClientOperation::OP_JOIN_SPECIFIC_SESSION) {
         sessionId = co_await getSpecificSessionTask(chatId, bot, msgQueue);
@@ -52,7 +55,7 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
     }
 
     // Send the NewConnection message to the server
-    std::string serialisedNewConnection = newConnection.SerializeAsString();
+    const std::string serialisedNewConnection = newConnection.SerializeAsString();
     sendBytes(socket, serialisedNewConnection);
     bot.getApi().sendMessage(chatId, "Connecting to the server...");
 
@@ -84,7 +87,7 @@ Task<> clientEntry(ChatIdType chatId, MessageQueue<TgMsg>& msgQueue, TgBot::Bot&
     // === Game has started
     // All execution traces that lead to here have the socket subscribing to the info messages
     while (true) {
-        TgMsg text = co_await msgQueue;
+        const TgMsg text = co_await msgQueue;
         bot.getApi().sendMessage(chatId, "Your message is: " + text->text);
     }
 

@@ -15,4 +15,4 @@ using namespace boost::asio;
 void subscribeToInfo(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot);
 std::optional<int> joinRandomSession(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot);
 std::optional<int> joinSpecificSession(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot);
-std::optional<int> createSession(tcp::socket& socket, ChatIdType& chatId, TgBot::Bot& bot);
+std::optional<int> createSession(tcp::socket& socket, ChatIdType& chatId, const TgBot::Bot& bot);

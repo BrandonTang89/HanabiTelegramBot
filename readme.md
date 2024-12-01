@@ -42,3 +42,10 @@ In the telegram client code, we can assume that the connection to the server wil
 - `./inc` - Contains all the header (`.h`) files.
 - `./src` - Contains all the source (`.cpp`) files.
 - `./proto` - Contains all the protobuf (`.proto`) files.
+
+
+## To Do
+- Beautify the telegram output
+  - Bold headers
+  - Emojis
+- Implement turn based game play

@@ -1,5 +1,11 @@
 syntax = "proto3";
 
+enum InfoSignal {
+    INFOSIGNAL_UNSPECIFIED = 0;
+    INFOSIGNAL_CONTINUE = 1; // the client should continue waiting for messages
+    INFOSIGNAL_BREAK = 2;    // the client should do the next relevant action
+}
 message InfoMessage {
     optional string message = 1;
+    optional InfoSignal signal = 2;
 }
