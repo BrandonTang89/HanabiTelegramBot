@@ -7,19 +7,25 @@ There are 2 parts to this process
 
 The point of this dual server approach is to separate the logic for running the game from the logic for handling the telegram bot, potentially allowing for cross platform games in the future.
 
-Between the 2 different servers, we will use google's [Protocol Buffers](https://protobuf.dev/) to communicate.
+Between the 2 different servers, we will use Google's [Protocol Buffers](https://protobuf.dev/) to communicate.
 
 We will use [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) as the telegram bot framework.
 
 ## Dependencies
 We require a compiler that supports C++23 (or at least C++20 for coroutines, but I did not try building with C++20). This project has only been tested with GNU GCC version 13.2.0.
 
-We need to install [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) as well as the [C++ boost libary](https://www.boost.org/). 
+We need to install [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp), [C++ boost libary](https://www.boost.org/) and [Protocol Buffers](https://github.com/protocolbuffers/protobuf/blob/main/src/README.md).
 
 To speed up compilation, we use [ccache](https://ccache.dev/) and [Ninja](https://github.com/ninja-build/ninja).
+
+Some of the necessary dependencies can be installed on Ubuntu via the apt package manager.
 ```sh
-sudo apt-get install libboost-all-dev ninja-build ccache
+sudo apt-get install libboost-all-dev ninja-build ccache protobuf-compiler
 ```
+
+We have to install [tgbot-cpp](https://github.com/reo7sp/tgbot-cpp) separately.
+
+Note that it is critical for protobuf to be of version 3.21 and above. This will be installed via apt-get for ubuntu LTS 24.
 
 ## The Game Server
 We spawn a new thread for each new client to allow the main thread to continue waiting on new connections. Threads that correspond to people joining lobbies will drop after they join a specific lobby. This means that the number of threads running at anytime roughly corresponds to the number of loading/active games. It might be better to use coroutines to deal with managing the various games, but that is a stretch goal.

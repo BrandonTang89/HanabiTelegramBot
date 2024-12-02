@@ -1,7 +1,8 @@
 #pragma once
 
 #include <mutex>
-#include <iosfwd>   
+#include <iosfwd>
+#include <optional>
 
 class Player; // Forward Declaration
 
@@ -14,7 +15,7 @@ class Session {
 
     static constexpr int maxPlayers = 5;
 
-    Session() {}
+    Session() = default;
     Session(Player leader_, int sessionId_);
     Session(Session&& source) noexcept;
     Session(const Session&) = delete;
